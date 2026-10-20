@@ -7,9 +7,9 @@
 
 Command: `npx tsx bench/accuracy.ts` → `bench/results/accuracy.json`
 
-- Ran at: 2026-10-20T17:18:02.043Z
+- Ran at: 2026-10-20T17:26:58.626Z
 - Machine: Darwin 27.0.0 arm64, Apple M1 (8 cores), 8 GiB RAM
-- Node v24.21.0; git version 2.54.0 (Apple Git-157); git-leak-hunter commit `1ac4353`
+- Node v24.21.0; git version 2.54.0 (Apple Git-157); git-leak-hunter commit `e4f3de8`
 
 Corpus: the eight fixture repositories built by `test/fixtures/buildRepos.ts` (seed 1337). They contain 32 planted fabricated secrets and the false-positive bait listed in `ground-truth.json`. Each tool ran once per repository with its **default rules**, in a non-network mode, without live verification.
 
@@ -17,7 +17,7 @@ Matching: A tool finding is a true positive when its (repo, file path, line) equ
 
 | Tool            | Version                | Planted                 | TP  | FP  | FN  | Precision | Recall | Raw reports |
 | --------------- | ---------------------- | ----------------------- | --- | --- | --- | --------- | ------ | ----------- |
-| git-leak-hunter | 0.1.0 (commit 1ac4353) | 32                      | 32  | 0   | 0   | 100.0%    | 100.0% | 32          |
+| git-leak-hunter | 0.1.0 (commit e4f3de8) | 32                      | 32  | 0   | 0   | 100.0%    | 100.0% | 32          |
 | gitleaks        | 8.30.1                 | 32                      | 28  | 0   | 4   | 100.0%    | 87.5%  | 29          |
 | trufflehog      | —                      | not run (not installed) | —   | —   | —   | —         | —      | —           |
 
@@ -66,9 +66,9 @@ Tools marked "not run" were not installed on the benchmark machine. Install them
 
 Command: `npx tsx bench/memoization.ts 5` → `bench/results/memoization.{json,csv}`
 
-- Ran at: 2026-10-20T17:22:40.598Z
+- Ran at: 2026-10-20T17:31:35.032Z
 - Machine: Darwin 27.0.0 arm64, Apple M1 (8 cores), 8 GiB RAM
-- Node v24.21.0; git version 2.54.0 (Apple Git-157); git-leak-hunter commit `1ac4353`
+- Node v24.21.0; git version 2.54.0 (Apple Git-157); git-leak-hunter commit `e4f3de8`
 
 Repositories: synthetic, generated with `git fast-import` by `test/fixtures/synthRepo.ts`. Each has 300 paths and 5 files rewritten per commit; every 10th file content carries a fabricated token (seed 2026).
 
@@ -81,14 +81,14 @@ Each configuration: one unrecorded warm-up, then 5 measured runs alternating cac
 
 | Profile    | Commits | Snapshot file versions | File versions seen | Unique blobs scanned | Cache hits | Cache: median / min (ms) | No cache: median / min (ms) | Ratio of medians |
 | ---------- | ------- | ---------------------- | ------------------ | -------------------- | ---------- | ------------------------ | --------------------------- | ---------------- |
-| high-reuse | 500     | 131,998                | 2,482              | 150                  | 2,332      | 67.6 / 63.1              | 183.2 / 173.1               | 2.71×            |
-| high-reuse | 1,000   | 281,998                | 4,964              | 150                  | 4,814      | 76.1 / 73.3              | 309.8 / 306.3               | 4.07×            |
-| high-reuse | 2,000   | 581,998                | 9,939              | 150                  | 9,789      | 104.1 / 103.6            | 569.3 / 561.7               | 5.47×            |
-| high-reuse | 4,000   | 1,181,998              | 19,865             | 150                  | 19,715     | 166.4 / 163              | 1088 / 1082.3               | 6.54×            |
-| low-reuse  | 500     | 131,954                | 2,500              | 2,451                | 49         | 230.8 / 226.3            | 230.7 / 229.5               | 1.00×            |
-| low-reuse  | 1,000   | 281,954                | 5,000              | 4,772                | 228        | 395.3 / 390.4            | 403.8 / 399.2               | 1.02×            |
-| low-reuse  | 2,000   | 581,954                | 10,000             | 9,079                | 921        | 674 / 672.6              | 722.5 / 715.3               | 1.07×            |
-| low-reuse  | 4,000   | 1,181,954              | 20,000             | 16,538               | 3,462      | 1133 / 1125.9            | 1319 / 1312.9               | 1.16×            |
+| high-reuse | 500     | 131,998                | 2,482              | 150                  | 2,332      | 65.5 / 63                | 181.3 / 177.5               | 2.77×            |
+| high-reuse | 1,000   | 281,998                | 4,964              | 150                  | 4,814      | 74.9 / 73.9              | 303.6 / 301.1               | 4.05×            |
+| high-reuse | 2,000   | 581,998                | 9,939              | 150                  | 9,789      | 104.6 / 101.6            | 570.8 / 567.1               | 5.46×            |
+| high-reuse | 4,000   | 1,181,998              | 19,865             | 150                  | 19,715     | 164 / 162.1              | 1084 / 1078.2               | 6.61×            |
+| low-reuse  | 500     | 131,954                | 2,500              | 2,451                | 49         | 229.4 / 226.7            | 230 / 227.6                 | 1.00×            |
+| low-reuse  | 1,000   | 281,954                | 5,000              | 4,772                | 228        | 403.7 / 397.6            | 419.1 / 414.4               | 1.04×            |
+| low-reuse  | 2,000   | 581,954                | 10,000             | 9,079                | 921        | 672.6 / 665.6            | 717.4 / 712.2               | 1.07×            |
+| low-reuse  | 4,000   | 1,181,954              | 20,000             | 16,538               | 3,462      | 1131.3 / 1126.4          | 1314.8 / 1303.3             | 1.16×            |
 
 Raw per-run samples are in `bench/results/memoization.json`.
 

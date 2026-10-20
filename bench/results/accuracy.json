@@ -1,21 +1,21 @@
 {
-  "generatedAt": "2026-10-20T17:18:02.042Z",
+  "generatedAt": "2026-10-20T17:26:58.625Z",
   "env": {
-    "ranAt": "2026-10-20T17:18:02.043Z",
+    "ranAt": "2026-10-20T17:26:58.626Z",
     "os": "Darwin 27.0.0 arm64",
     "cpu": "Apple M1",
     "cores": 8,
     "memoryGiB": 8,
     "node": "v24.21.0",
     "git": "git version 2.54.0 (Apple Git-157)",
-    "gitLeakHunterCommit": "1ac4353"
+    "gitLeakHunterCommit": "e4f3de8"
   },
   "seed": 1337,
   "matching": "A tool finding is a true positive when its (repo, file path, line) equals a planted secret in ground-truth.json; several reports of the same planted secret count once. Each distinct unmatched (repo, path, line) is one false positive. Planted secrets never matched are false negatives.",
   "tools": [
     {
       "tool": "git-leak-hunter",
-      "version": "0.1.0 (commit 1ac4353)",
+      "version": "0.1.0 (commit e4f3de8)",
       "command": "node --import tsx src/cli.ts scan <repo> --format json --out <out> --quiet",
       "status": "ran",
       "totals": {
@@ -48,7 +48,7 @@
           },
           "fpLocations": [],
           "rawFindings": 3,
-          "durationMs": 243
+          "durationMs": 263
         },
         {
           "repo": "head-secrets",
@@ -82,7 +82,7 @@
           },
           "fpLocations": [],
           "rawFindings": 7,
-          "durationMs": 220
+          "durationMs": 217
         },
         {
           "repo": "blob-reuse",
@@ -107,7 +107,7 @@
           },
           "fpLocations": [],
           "rawFindings": 4,
-          "durationMs": 221
+          "durationMs": 234
         },
         {
           "repo": "merge-conflict",
@@ -126,7 +126,7 @@
           },
           "fpLocations": [],
           "rawFindings": 2,
-          "durationMs": 241
+          "durationMs": 226
         },
         {
           "repo": "ci-configs",
@@ -175,7 +175,7 @@
           },
           "fpLocations": [],
           "rawFindings": 12,
-          "durationMs": 233
+          "durationMs": 230
         },
         {
           "repo": "false-positives",
@@ -187,7 +187,7 @@
           "matched": {},
           "fpLocations": [],
           "rawFindings": 0,
-          "durationMs": 218
+          "durationMs": 219
         },
         {
           "repo": "hostile",
@@ -212,7 +212,7 @@
           },
           "fpLocations": [],
           "rawFindings": 4,
-          "durationMs": 214
+          "durationMs": 264
         },
         {
           "repo": "clean",
@@ -224,7 +224,7 @@
           "matched": {},
           "fpLocations": [],
           "rawFindings": 0,
-          "durationMs": 203
+          "durationMs": 208
         }
       ]
     },
@@ -264,7 +264,7 @@
           },
           "fpLocations": [],
           "rawFindings": 3,
-          "durationMs": 59
+          "durationMs": 63
         },
         {
           "repo": "head-secrets",
@@ -323,7 +323,7 @@
           },
           "fpLocations": [],
           "rawFindings": 5,
-          "durationMs": 50
+          "durationMs": 49
         },
         {
           "repo": "merge-conflict",
@@ -396,7 +396,7 @@
           "matched": {},
           "fpLocations": [],
           "rawFindings": 0,
-          "durationMs": 51
+          "durationMs": 48
         },
         {
           "repo": "hostile",
@@ -421,7 +421,7 @@
           },
           "fpLocations": [],
           "rawFindings": 4,
-          "durationMs": 518
+          "durationMs": 512
         },
         {
           "repo": "clean",
@@ -433,7 +433,7 @@
           "matched": {},
           "fpLocations": [],
           "rawFindings": 0,
-          "durationMs": 50
+          "durationMs": 51
         }
       ]
     },

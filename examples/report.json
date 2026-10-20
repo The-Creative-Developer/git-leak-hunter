@@ -9,8 +9,8 @@
     "head": "07dda7a82f0fbfe23e3bb4ee6a36daa418feb285"
   },
   "scan": {
-    "startedAt": "2026-10-20T17:23:28.872Z",
-    "finishedAt": "2026-10-20T17:23:28.978Z",
+    "startedAt": "2026-10-20T17:31:39.405Z",
+    "finishedAt": "2026-10-20T17:31:39.523Z",
     "configHash": "b26f2e407f9c5064",
     "options": {
       "entropy": {
@@ -41,7 +41,7 @@
     "uniqueBlobsScanned": 8,
     "cacheHits": 0,
     "bytesScanned": 2258,
-    "durationMs": 46.3,
+    "durationMs": 54.4,
     "skipped": {
       "binary": 0,
       "oversize": 0,
