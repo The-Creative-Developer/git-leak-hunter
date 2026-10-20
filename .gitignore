@@ -1,0 +1,8 @@
+node_modules/
+dist/
+coverage/
+leak-report/
+.fixtures/
+bench/results/tmp/
+*.tgz
+.DS_Store

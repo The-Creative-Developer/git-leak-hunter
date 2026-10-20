@@ -1,0 +1,209 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:git-leak-hunter:report:1.0",
+  "title": "Git Leak Hunter report",
+  "description": "report.json produced by git-leak-hunter. No field may contain a full secret; findings carry only redacted previews.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "tool", "repository", "scan", "summary", "stats", "findings"],
+  "properties": {
+    "schemaVersion": { "const": "1.0" },
+    "tool": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "version"],
+      "properties": {
+        "name": { "const": "git-leak-hunter" },
+        "version": { "type": "string", "minLength": 1 }
+      }
+    },
+    "repository": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["target", "head"],
+      "properties": {
+        "target": { "type": "string", "minLength": 1 },
+        "head": { "oneOf": [{ "$ref": "#/$defs/objectId" }, { "type": "null" }] }
+      }
+    },
+    "scan": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["startedAt", "finishedAt", "configHash", "options"],
+      "properties": {
+        "startedAt": { "$ref": "#/$defs/isoDate" },
+        "finishedAt": { "$ref": "#/$defs/isoDate" },
+        "configHash": { "type": "string", "pattern": "^[0-9a-f]{16,64}$" },
+        "options": { "$ref": "#/$defs/scanOptions" }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["total", "bySeverity", "inHead", "historyOnly"],
+      "properties": {
+        "total": { "$ref": "#/$defs/count" },
+        "bySeverity": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["critical", "high", "medium", "low"],
+          "properties": {
+            "critical": { "$ref": "#/$defs/count" },
+            "high": { "$ref": "#/$defs/count" },
+            "medium": { "$ref": "#/$defs/count" },
+            "low": { "$ref": "#/$defs/count" }
+          }
+        },
+        "inHead": { "$ref": "#/$defs/count" },
+        "historyOnly": { "$ref": "#/$defs/count" }
+      }
+    },
+    "stats": { "$ref": "#/$defs/scanStats" },
+    "findings": { "type": "array", "items": { "$ref": "#/$defs/finding" } }
+  },
+  "$defs": {
+    "count": { "type": "integer", "minimum": 0 },
+    "objectId": { "type": "string", "pattern": "^[0-9a-f]{40}([0-9a-f]{24})?$" },
+    "isoDate": { "type": "string", "minLength": 10 },
+    "severity": { "enum": ["critical", "high", "medium", "low"] },
+    "identity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "email"],
+      "properties": {
+        "name": { "type": "string" },
+        "email": { "type": "string" }
+      }
+    },
+    "scanOptions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["entropy", "ci", "cache", "verify", "maxFileBytes"],
+      "properties": {
+        "entropy": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["hex", "base64", "minLength"],
+          "properties": {
+            "hex": { "type": "number", "minimum": 0 },
+            "base64": { "type": "number", "minimum": 0 },
+            "minLength": { "type": "integer", "minimum": 1 }
+          }
+        },
+        "maxCommits": { "type": "integer", "minimum": 1 },
+        "since": { "type": "string" },
+        "branch": { "type": "string" },
+        "ci": { "type": "boolean" },
+        "cache": { "type": "boolean" },
+        "verify": { "type": "boolean" },
+        "maxFileBytes": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "scanStats": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "commitsWalked",
+        "fileVersionsSeen",
+        "uniqueBlobsScanned",
+        "cacheHits",
+        "bytesScanned",
+        "durationMs",
+        "skipped",
+        "suppressed"
+      ],
+      "properties": {
+        "commitsWalked": { "$ref": "#/$defs/count" },
+        "fileVersionsSeen": { "$ref": "#/$defs/count" },
+        "uniqueBlobsScanned": { "$ref": "#/$defs/count" },
+        "cacheHits": { "$ref": "#/$defs/count" },
+        "bytesScanned": { "$ref": "#/$defs/count" },
+        "durationMs": { "type": "number", "minimum": 0 },
+        "skipped": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["binary", "oversize", "ignored"],
+          "properties": {
+            "binary": { "$ref": "#/$defs/count" },
+            "oversize": { "$ref": "#/$defs/count" },
+            "ignored": { "$ref": "#/$defs/count" }
+          }
+        },
+        "suppressed": {
+          "type": "object",
+          "propertyNames": {
+            "enum": [
+              "uuid",
+              "git-sha",
+              "lockfile",
+              "placeholder",
+              "known-example",
+              "repeated-chars",
+              "data-uri",
+              "ci-expression",
+              "env-reference",
+              "low-entropy",
+              "ignore-file",
+              "inline-ignore",
+              "vendor-path"
+            ]
+          },
+          "additionalProperties": { "$ref": "#/$defs/count" }
+        }
+      }
+    },
+    "finding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "fingerprint",
+        "ruleId",
+        "secretType",
+        "detector",
+        "severity",
+        "filePath",
+        "commitHash",
+        "line",
+        "column",
+        "redactedPreview",
+        "blobHash",
+        "author",
+        "date",
+        "commitSubject",
+        "firstSeenCommit",
+        "otherCommitCount",
+        "presence",
+        "verificationStatus"
+      ],
+      "properties": {
+        "fingerprint": { "type": "string", "pattern": "^[0-9a-f]{16,64}$" },
+        "ruleId": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" },
+        "secretType": { "type": "string", "minLength": 1 },
+        "detector": { "enum": ["signature", "entropy", "ci", "credential-file"] },
+        "severity": { "$ref": "#/$defs/severity" },
+        "filePath": { "type": "string", "minLength": 1 },
+        "commitHash": { "$ref": "#/$defs/objectId" },
+        "line": { "type": "integer", "minimum": 1 },
+        "column": { "type": "integer", "minimum": 1 },
+        "redactedPreview": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200,
+          "description": "Redacted form only: first 4 + stars + last 4 for secrets of 12+ chars, at most 2 leading chars otherwise."
+        },
+        "redactedContext": { "type": "string", "maxLength": 1000 },
+        "entropy": { "type": "number", "minimum": 0 },
+        "blobHash": { "$ref": "#/$defs/objectId" },
+        "author": { "$ref": "#/$defs/identity" },
+        "date": { "$ref": "#/$defs/isoDate" },
+        "commitSubject": { "type": "string" },
+        "firstSeenCommit": { "$ref": "#/$defs/objectId" },
+        "otherCommitCount": { "$ref": "#/$defs/count" },
+        "presence": { "enum": ["in-HEAD", "history-only"] },
+        "verificationStatus": { "enum": ["NOT_CHECKED", "ACTIVE", "INACTIVE", "UNVERIFIABLE"] },
+        "verificationNote": { "type": "string", "maxLength": 200 },
+        "pairedFingerprint": { "type": "string", "pattern": "^[0-9a-f]{16,64}$" }
+      }
+    }
+  }
+}
