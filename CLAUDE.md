@@ -43,6 +43,7 @@ fails validation.
 | Build                                  | `npm run build`                         |
 | Run CLI from source                    | `npm run dev -- scan <path>`            |
 | Build fixture repos to a dir           | `npm run fixtures -- <outDir>`          |
+| Entropy calibration table              | `npx tsx bench/entropy-calibration.ts`  |
 | Audit                                  | `npm audit`                             |
 
 Requirements: runtime Node ≥ 20; development tooling (Vitest 5, ESLint 10) needs Node ≥ 22.12.
@@ -55,6 +56,8 @@ new versions are only adopted after they have been published for at least 14 day
 src/
   cli.ts            commander entry; exit codes (0 clean, 1 findings >= --fail-on, 2 error)
   pipeline.ts       wires the four stages
+  analyze.ts        per-blob matches → Findings (first commit, presence, severity, pairing)
+  config.ts         --config JSON (thresholds, severity overrides, ignores); never read from the target
   types.ts          ContentUnit, Finding, Report, enums
   git/              Stage 1: GitEngine (log/diff-tree walk, cat-file --batch, blob cache, counters)
   detect/           Stage 2: signatures, entropy, suppression, severity, engine

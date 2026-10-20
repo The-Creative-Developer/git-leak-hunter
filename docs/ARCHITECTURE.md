@@ -1,6 +1,7 @@
 # Architecture
 
-> Status: skeleton (Phase 1). Sections marked _TBD_ are filled in as each stage is implemented.
+> Status: Phases 1–2 implemented (Git engine, detection, CI/CD parsing, reports). Verification
+> (Stage 3b) is Phase 3.
 
 Git Leak Hunter scans the **entire reachable history** of a Git repository, not just the working
 tree, because a secret deleted in a later commit stays recoverable until history is rewritten.
@@ -37,12 +38,40 @@ is still never derived from the secret value.
   checkout, removed afterwards even on failure).
 - Walks `git log --all` with raw diff output (`-z`, full blob hashes, merges diffed against each
   parent) so it gets commit metadata plus the changed paths and their blob hashes.
-- Reads content by blob hash through one long-lived `git cat-file --batch` process; it never checks
-  out a commit.
+- Reads content by blob hash through one long-lived `git cat-file --batch-command` process
+  (`info` first, so oversize blobs are never transferred). It never checks out a commit.
 - Counters (measured, never estimated): `commitsWalked`, `fileVersionsSeen`, `uniqueBlobsScanned`,
   `cacheHits`, `bytesScanned`, `durationMs`.
 
-_TBD (Phase 2): exact git invocations, streaming parser, presence computation._
+**Git invocations** (`src/git/exec.ts` is the only module that spawns git, always with an argv array):
+
+| Purpose              | Command                                                                                                                                                                                                              |
+| -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| History walk         | `git log --topo-order --reverse -m --root --raw -z --no-abbrev --no-renames --no-ext-diff --no-textconv --format=<nonce marker + %H %P %an %ae %aI %s> [--max-count] [--since] (--all \| --end-of-options <oid>) --` |
+| Blob reads           | `git cat-file --batch-command` (`info <oid>`, `contents <oid>`)                                                                                                                                                      |
+| HEAD tree (presence) | `git ls-tree -r -z --full-tree --end-of-options <oid>`                                                                                                                                                               |
+| Ref resolution       | `git rev-parse --verify --quiet --end-of-options <ref>^{commit}`                                                                                                                                                     |
+| Clone                | `git clone --bare --quiet --template= -- <url> <tmp>`                                                                                                                                                                |
+
+Every call is prefixed with `-c core.hooksPath=/dev/null -c core.fsmonitor=false -c core.pager=cat
+-c protocol.allow=never -c protocol.https.allow=always -c protocol.ssh.allow=always
+-c submodule.recurse=false --no-pager`. `GIT_*` variables that would redirect git (`GIT_DIR`,
+`GIT_WORK_TREE`, …) are removed from the environment, and prompts are disabled. Remote URLs must be
+`https://`, `ssh://` or scp-like ssh; `ext::`, `file://` and option-like values are rejected before
+anything is spawned. Credentials in URLs are stripped from every message and from the report.
+
+**Streaming parser** (`src/git/log.ts`). stdout is split into NUL-terminated tokens as it arrives.
+Each commit header starts with a marker carrying a random per-run nonce, so an attacker-controlled
+subject or path cannot forge a commit boundary. Raw records (`:<mode> <mode> <old> <new> <status>`
+followed by the path token) are yielded one by one, so memory grows with the number of file
+versions, not with blob content. Deletions and gitlinks (submodules, mode 160000) are skipped.
+Merges are diffed against **each** parent (`-m`), so a secret introduced only while resolving a
+conflict is seen (fixture `merge-conflict`).
+
+**Presence.** After the walk, the HEAD tree (or the `--branch` tip) is listed. Each path's blob
+result comes from the cache; blobs a limited walk (`--max-commits`/`--since`) never reached are
+scanned with `origin: 'head'`. A finding is `in-HEAD` when the same secret is found at the same path
+there, otherwise `history-only`.
 
 ### Memoization (DAA connection)
 
@@ -52,6 +81,13 @@ identical content reached through other commits, paths, branches or reverts is s
 `O(unique blobs)`. Per-commit attribution (first commit, other-commit count, presence) is applied
 on top of the cached per-blob result. `--no-cache` disables the cache so the benchmark can measure
 the difference.
+
+The cache key is `configHash:blobHash:fileKind`. `fileKind` (generic, lockfile, github-actions,
+dotenv, …) is part of the key because the same bytes are parsed differently at
+`.github/workflows/x.yml` and at `docs/x.yml`. Severity depends on the path class and on presence,
+so it is computed after the cache, in `src/analyze.ts`. With the cache on, the tests assert that
+the scanner function is called **exactly once per unique (blob, kind)** and that
+`uniqueBlobsScanned + cacheHits = fileVersionsSeen` (`test/integration/scan.test.ts`).
 
 Invariant (Phase 3 test): the set of scanned blob hashes equals the set of reachable blobs from
 `git rev-list --objects --all`, minus the deliberately skipped ones (binary, oversize, ignored).
@@ -64,13 +100,20 @@ Invariant (Phase 3 test): the set of scanned blob hashes equals the set of reach
    characters, data URIs, `.leakhunterignore`, inline `leakhunter:ignore`. Each reason is counted.
 4. **Severity** — a pure, table-driven function (see `docs/RULES.md`).
 
-_TBD (Phase 2)._
+`scanBlob(unit, kind, config)` in `src/detect/engine.ts` combines signature, structured (CI /
+credential file) and generic candidates. It resolves overlapping spans, applies suppression and
+entropy, and returns `BlobMatch`es. A match holds a redacted preview, a redacted context line and a
+keyed HMAC used only for grouping. The raw value never leaves this function. `src/analyze.ts` turns
+matches into `Finding`s: first commit, other-commit count, presence, severity and pairing. Every
+rule, threshold and table is in `docs/RULES.md`.
 
 ## Stage 3a — CI/CD scanning (`src/ci/`)
 
 GitHub Actions `env:`/`with:` literals, GitLab CI `variables:`, Dockerfile `ENV`/`ARG`, and committed
 credential files. They are scanned across history through the same ContentUnit/blob-cache path.
-Malformed YAML falls back to text scanning. _TBD (Phase 2)._
+Parsing uses the `yaml` AST, so source offsets give exact line/column. Dockerfile continuation
+lines are joined with an offset map. Malformed YAML raises `CiParseError`, and the file is
+re-scanned as text by the generic matcher (detector `ci`), so a broken file never crashes the scan.
 
 ## Stage 3b — Optional verification (`src/verify/`)
 
@@ -80,8 +123,22 @@ after verification. _TBD (Phase 3)._
 
 ## Stage 4 — Report Engine (`src/report/`)
 
-Redaction, severity-then-recency sort, schema-valid JSON, and a single-file HTML report (inline
-CSS/JS, restrictive CSP, every dynamic value escaped, no external resources). _TBD (Phase 2)._
+- **Redaction** (`redact.ts`): first 4 + 16 stars + last 4; context lines are masked twice
+  (detected spans, then any residual token-like run). Commit subjects and author fields go through
+  the same masking.
+- **JSON** (`json.ts`): `report.json`, validated against `schema/report.schema.json` in the tests.
+  `additionalProperties: false` everywhere, so an unexpected (e.g. raw-secret) field fails
+  validation.
+- **HTML** (`html.ts`): one file containing:
+  - inline CSS and one inline vanilla-JS block (filter by severity and presence, sort by severity
+    or recency);
+  - CSP `default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'`;
+  - no external resources;
+  - severity always shown as a text label, a print stylesheet, and a dark-mode palette.
+
+  Every dynamic value goes through `esc()`. Control characters in paths are shown as `\xNN`.
+
+- **Ordering**: severity (desc), then commit date (desc), then path and line.
 
 ## Test fixtures
 

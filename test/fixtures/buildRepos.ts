@@ -167,6 +167,7 @@ function runGit(
         resolve(result);
       }
     });
+    child.stdin.on('error', () => undefined);
     child.stdin.end(opts.input ?? '');
   });
 }
