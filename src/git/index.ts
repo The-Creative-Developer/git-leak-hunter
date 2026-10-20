@@ -55,9 +55,11 @@ export interface HistoryScan {
   /** Blob ids actually scanned / deliberately skipped (for the reachable-blob invariant). */
   scannedBlobs: Set<string>;
   skippedBlobs: Set<string>;
+  /** Blobs seen only on ignored paths are added here (a blob also scanned elsewhere is in both). */
+  ignoredBlobs: Set<string>;
 }
 
-/** 'missing' covers objects absent from a partial/shallow clone; they are neither scanned nor counted. */
+/** 'missing' covers objects absent from a partial/shallow clone: counted, never scanned. */
 type Outcome = BlobScanResult | 'binary' | 'oversize' | 'missing';
 
 const BINARY_SNIFF_BYTES = 8000;
@@ -98,7 +100,8 @@ export async function scanHistory(opts: GitEngineOptions): Promise<HistoryScan> 
   const occurrences: Occurrence[] = [];
   const scannedBlobs = new Set<string>();
   const skippedBlobs = new Set<string>();
-  const skipped: SkipCounts = { binary: 0, oversize: 0, ignored: 0 };
+  const skipped: SkipCounts = { binary: 0, oversize: 0, ignored: 0, missing: 0 };
+  const ignoredBlobs = new Set<string>();
   const suppressed: Partial<Record<SuppressionReason, number>> = {};
   const counters: GitEngineCounters = {
     commitsWalked: 0,
@@ -154,8 +157,8 @@ export async function scanHistory(opts: GitEngineOptions): Promise<HistoryScan> 
         );
       }
     }
-    if (firstTime && outcome !== 'missing') {
-      if (outcome === 'binary' || outcome === 'oversize') {
+    if (firstTime) {
+      if (outcome === 'binary' || outcome === 'oversize' || outcome === 'missing') {
         skipped[outcome]++;
         skippedBlobs.add(blob);
       } else {
@@ -179,6 +182,7 @@ export async function scanHistory(opts: GitEngineOptions): Promise<HistoryScan> 
       const kind = opts.classify(entry.path);
       if (kind === null) {
         skipped.ignored++;
+        ignoredBlobs.add(entry.blob);
         continue;
       }
       const outcome = await scanOne(entry.commit, entry.path, entry.blob, kind, 'history');
@@ -222,5 +226,14 @@ export async function scanHistory(opts: GitEngineOptions): Promise<HistoryScan> 
 
   counters.commitsWalked = commits.size;
   counters.durationMs = Math.round((performance.now() - t0) * 10) / 10;
-  return { occurrences, headResults, counters, skipped, suppressed, scannedBlobs, skippedBlobs };
+  return {
+    occurrences,
+    headResults,
+    counters,
+    skipped,
+    suppressed,
+    scannedBlobs,
+    skippedBlobs,
+    ignoredBlobs,
+  };
 }

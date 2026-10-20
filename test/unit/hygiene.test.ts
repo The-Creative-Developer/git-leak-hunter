@@ -58,3 +58,12 @@ describe('repository hygiene', () => {
     expect(hits).toEqual([]);
   });
 });
+
+describe('dogfooding', () => {
+  it('this repository’s own committed history scans clean with git-leak-hunter', async () => {
+    const { runScan } = await import('../../src/pipeline.js');
+    const { defaultOptions } = await import('../helpers/scan.js');
+    const res = await runScan({ target: ROOT, outDir: '', formats: [], options: defaultOptions() });
+    expect(res.report.findings.map((f) => `${f.ruleId} ${f.filePath}:${f.line}`)).toEqual([]);
+  });
+});

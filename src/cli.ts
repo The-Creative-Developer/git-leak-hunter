@@ -79,6 +79,16 @@ function validateSince(since: string | undefined): void {
   }
 }
 
+export function verifyBanner(verifiable: number): string {
+  return [
+    `! LIVE VERIFICATION ENABLED for ${verifiable} candidate credential${verifiable === 1 ? '' : 's'}`,
+    '  Read-only checks only: AWS sts:GetCallerIdentity and GitHub GET /user (no other calls).',
+    '  Only verify credentials you own or are explicitly authorized to test.',
+    '  Never use a live credential; report it privately to the owner and have it rotated.',
+    '',
+  ].join('\n');
+}
+
 /** Console summary mirroring the demo: real counters only, never secret values. */
 function printSummary(io: Io, result: ScanResult, opts: ScanCliOptions): void {
   const { report, written, ciFiles } = result;
@@ -110,13 +120,21 @@ function printSummary(io: Io, result: ScanResult, opts: ScanCliOptions): void {
   const bySev = SEVERITIES.map((sev) => `${report.summary.bySeverity[sev]} ${sev}`).join(', ');
   const detail = n > 0 ? `${bySev}; ${report.summary.historyOnly} history-only` : '';
   line(n > 0 ? pc.yellow('!') : ok, `${n} finding${n === 1 ? '' : 's'} detected`, detail);
+  if (result.verification) {
+    const v = result.verification;
+    line(
+      v.active > 0 ? pc.red('!') : ok,
+      'live verification',
+      `${v.active} active, ${v.inactive} inactive, ${v.unverifiable} unverifiable; ${v.calls.aws} AWS + ${v.calls.github} GitHub calls`,
+    );
+  }
   if (written.html) line(ok, 'report.html generated', written.html);
   if (written.json) line(ok, 'report.json generated', written.json);
   if (opts.verbose) {
     io.out(pc.dim(`  bytes scanned: ${s.bytesScanned}, duration: ${s.durationMs} ms\n`));
     io.out(
       pc.dim(
-        `  skipped: ${s.skipped.binary} binary, ${s.skipped.oversize} oversize, ${s.skipped.ignored} ignored\n`,
+        `  skipped: ${s.skipped.binary} binary, ${s.skipped.oversize} oversize, ${s.skipped.ignored} ignored, ${s.skipped.missing} missing\n`,
       ),
     );
     const reasons = Object.entries(s.suppressed)
@@ -133,10 +151,6 @@ async function scanAction(target: string, opts: ScanCliOptions, io: Io): Promise
     );
     return EXIT_ERROR;
   }
-  if (opts.verify) {
-    io.err('error: live verification is not available in this build yet (Phase 3)\n');
-    return EXIT_ERROR;
-  }
   validateSince(opts.since);
   const cfg = await loadConfig(opts.config);
   const options: ScanOptions = {
@@ -150,7 +164,7 @@ async function scanAction(target: string, opts: ScanCliOptions, io: Io): Promise
     ...(opts.branch === undefined ? {} : { branch: opts.branch }),
     ci: opts.ci,
     cache: opts.cache,
-    verify: false,
+    verify: opts.verify === true,
     maxFileBytes: cfg.maxFileBytes,
   };
   const result = await runScan(
@@ -164,6 +178,7 @@ async function scanAction(target: string, opts: ScanCliOptions, io: Io): Promise
       severityOverrides: cfg.severity,
     },
     {
+      onVerifyStart: (n) => io.err(pc.yellow(verifyBanner(n))),
       onBeforeClone: (url) =>
         io.err(
           pc.yellow(
@@ -262,5 +277,8 @@ function invokedDirectly(): boolean {
 }
 
 if (invokedDirectly()) {
+  // Exit through process.exit so 'exit' hooks (temp clone cleanup) run on Ctrl-C / SIGTERM.
+  process.once('SIGINT', () => process.exit(130));
+  process.once('SIGTERM', () => process.exit(143));
   process.exitCode = await main(process.argv);
 }

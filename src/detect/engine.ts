@@ -7,17 +7,20 @@ import { createHmac } from 'node:crypto';
 import type { ContentUnit, EntropyThresholds, SuppressionReason } from '../types.js';
 import { CiParseError, structuredCandidates } from '../ci/index.js';
 import { lineColumn, lineText } from '../text.js';
-import { redact, redactLine } from '../report/redact.js';
+import { redact, redactLine, type Span } from '../report/redact.js';
 import { scoreEntropy } from './entropy.js';
 import { genericCandidates } from './generic.js';
 import { findSignatureCandidates } from './signatures.js';
 import { isVendorPath, suppressionReason } from './suppress.js';
 import type { BlobMatch, BlobScanResult, Candidate, FileKind } from './types.js';
+import { VERIFIABLE_RULES, type Vault } from '../verify/vault.js';
 
 export interface DetectConfig {
   entropy: EntropyThresholds;
   /** Per-run random key for the occurrence-grouping HMAC. Never serialised. */
   runKey: Buffer;
+  /** Present only with `--verify`: raw values of verifiable credentials are stored here. */
+  vault?: Vault;
 }
 
 /** Values with a secret-like key shorter than this are dropped instead of reported as weak. */
@@ -36,13 +39,24 @@ export function resolveOverlaps(candidates: Candidate[]): Candidate[] {
       (a, b) =>
         DETECTOR_PRIORITY[a.c.detector] - DETECTOR_PRIORITY[b.c.detector] || a.c.start - b.c.start,
     );
+  // `kept` stays sorted by start and its spans are disjoint, so only the two neighbours of the
+  // insertion point can overlap a new span (binary search instead of a quadratic scan).
   const kept: Array<{ c: Candidate; i: number }> = [];
   for (const entry of order) {
-    if (kept.some((k) => entry.c.start < k.c.end && k.c.start < entry.c.end)) continue;
-    kept.push(entry);
+    let lo = 0;
+    let hi = kept.length;
+    while (lo < hi) {
+      const mid = (lo + hi) >> 1;
+      if ((kept[mid]?.c.start ?? 0) < entry.c.start) lo = mid + 1;
+      else hi = mid;
+    }
+    const before = kept[lo - 1];
+    const after = kept[lo];
+    if (before && before.c.end > entry.c.start) continue;
+    if (after && after.c.start < entry.c.end) continue;
+    kept.splice(lo, 0, entry);
   }
   // Re-map pair indices to positions in the returned array.
-  kept.sort((a, b) => a.c.start - b.c.start);
   const pos = new Map(kept.map((k, idx) => [k.i, idx]));
   return kept.map(({ c }) => {
     const pair = c.pairWith === undefined ? undefined : pos.get(c.pairWith);
@@ -71,6 +85,28 @@ function gatherCandidates(content: string, kind: FileKind, cfg: DetectConfig): C
   }
   out.push(...genericCandidates(content, { minLength: cfg.entropy.minLength }));
   return out;
+}
+
+/** Characters of context kept on each side of a match. */
+const CONTEXT_RADIUS = 100;
+const TOKEN_CHAR = /[A-Za-z0-9+/=_-]/;
+
+/**
+ * Window [from, to) around a match within its line. Edges never cut through a token, so a clipped
+ * fragment of an undetected secret cannot slip past residual masking.
+ */
+export function contextWindow(
+  content: string,
+  lineStart: number,
+  lineEnd: number,
+  start: number,
+  end: number,
+): [number, number] {
+  let from = Math.max(lineStart, start - CONTEXT_RADIUS);
+  let to = Math.min(lineEnd, Math.max(end, start) + CONTEXT_RADIUS);
+  if (from > lineStart) while (from < start && TOKEN_CHAR.test(content.charAt(from - 1))) from++;
+  if (to < lineEnd) while (to > end && TOKEN_CHAR.test(content.charAt(to))) to--;
+  return [from, to];
 }
 
 export function digestOf(runKey: Buffer, value: string): string {
@@ -140,6 +176,7 @@ export function scanBlob(unit: ContentUnit, kind: FileKind, cfg: DetectConfig): 
       ...(entropy === undefined ? {} : { entropy }),
       weak,
       digest: digestOf(cfg.runKey, c.value),
+      ...(cfg.vault && VERIFIABLE_RULES.has(c.ruleId) ? { vaultRef: cfg.vault.put(c.value) } : {}),
     });
   });
 
@@ -151,16 +188,38 @@ export function scanBlob(unit: ContentUnit, kind: FileKind, cfg: DetectConfig): 
     if (target && other !== undefined) target.pair = other;
   });
 
-  // Context lines: every kept span on the same line is replaced by its preview.
-  for (const m of matches) {
+  // Context: a bounded window of the match's line, with every kept span in it replaced by its
+  // preview. Bounding the window keeps this linear even for one huge line with many matches.
+  matches.forEach((m, i) => {
+    const c = kept[i];
+    if (!c) return;
     const lineStart = lineOffsets[m.line - 1] ?? 0;
-    const text = lineText(content, lineOffsets, m.line);
-    const spans = kept
-      .map((c, j) => ({ c, preview: matches[j]?.redactedPreview ?? '' }))
-      .filter(({ c }) => c.start < lineStart + text.length + 1 && c.end > lineStart)
-      .map(({ c, preview }) => ({ start: c.start - lineStart, end: c.end - lineStart, preview }));
-    m.redactedContext = redactLine(text, spans);
-  }
+    const lineEnd = lineStart + lineText(content, lineOffsets, m.line).length;
+    const [from, to] = contextWindow(
+      content,
+      lineStart,
+      lineEnd,
+      c.start,
+      Math.min(c.end, lineEnd),
+    );
+    const spans: Span[] = [];
+    // `kept` is sorted by start with disjoint spans; walk outwards from this match.
+    for (let j = i; j >= 0 && (kept[j]?.end ?? 0) > from; j--) spans.push(spanOf(j));
+    for (let j = i + 1; j < kept.length && (kept[j]?.start ?? to) < to; j++) spans.push(spanOf(j));
+    m.redactedContext =
+      (from > lineStart ? '…' : '') +
+      redactLine(content.slice(from, to), spans) +
+      (to < lineEnd ? '…' : '');
+
+    function spanOf(j: number): Span {
+      const k = kept[j] as Candidate;
+      return {
+        start: k.start - from,
+        end: k.end - from,
+        preview: matches[j]?.redactedPreview ?? '',
+      };
+    }
+  });
 
   return { matches, suppressed };
 }

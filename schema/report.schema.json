@@ -122,11 +122,12 @@
         "skipped": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["binary", "oversize", "ignored"],
+          "required": ["binary", "oversize", "ignored", "missing"],
           "properties": {
             "binary": { "$ref": "#/$defs/count" },
             "oversize": { "$ref": "#/$defs/count" },
-            "ignored": { "$ref": "#/$defs/count" }
+            "ignored": { "$ref": "#/$defs/count" },
+            "missing": { "$ref": "#/$defs/count" }
           }
         },
         "suppressed": {

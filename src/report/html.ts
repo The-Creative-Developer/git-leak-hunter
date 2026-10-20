@@ -173,8 +173,8 @@ export function renderHtml(report: Report): string {
     stat('Bytes scanned', s.bytesScanned),
     stat('Duration', `${s.durationMs} ms`),
     stat(
-      'Skipped (binary / oversize / ignored)',
-      `${s.skipped.binary} / ${s.skipped.oversize} / ${s.skipped.ignored}`,
+      'Skipped (binary / oversize / ignored / missing)',
+      `${s.skipped.binary} / ${s.skipped.oversize} / ${s.skipped.ignored} / ${s.skipped.missing}`,
     ),
     stat('History-only findings', report.summary.historyOnly),
   ].join('');

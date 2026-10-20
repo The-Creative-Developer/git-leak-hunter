@@ -129,7 +129,7 @@ describe('severity and presence', () => {
 
   it('skips the binary and the oversize file in the hostile repo', async () => {
     const { result } = await scanned('hostile');
-    expect(result.report.stats.skipped).toEqual({ binary: 1, oversize: 1, ignored: 0 });
+    expect(result.report.stats.skipped).toEqual({ binary: 1, oversize: 1, ignored: 0, missing: 0 });
   });
 });
 

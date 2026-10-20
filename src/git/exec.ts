@@ -35,6 +35,8 @@ export function gitEnv(): NodeJS.ProcessEnv {
     Object.entries(process.env).filter(([key]) => !key.startsWith('GIT_') || keep.includes(key)),
   );
   env.GIT_TERMINAL_PROMPT = '0';
+  // Never let ssh prompt (host keys, passphrases) and hang an unattended scan.
+  if (!env.GIT_SSH_COMMAND && !env.GIT_SSH) env.GIT_SSH_COMMAND = 'ssh -o BatchMode=yes';
   env.GIT_OPTIONAL_LOCKS = '0';
   env.LC_ALL = 'C';
   return env;

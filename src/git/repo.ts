@@ -1,4 +1,5 @@
 /** Open a local repository, or clone a remote URL into a temp dir (bare, no hooks, no checkout). */
+import { rmSync } from 'node:fs';
 import { mkdtemp, rm, stat } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
@@ -13,6 +14,28 @@ export interface OpenedRepo {
   head: string | null;
   isRemote: boolean;
   cleanup(): Promise<void>;
+}
+
+/** Temp clone dirs still on disk; removed synchronously on process exit (incl. Ctrl-C via the CLI). */
+const liveTempDirs = new Set<string>();
+let exitHookInstalled = false;
+
+function trackTempDir(dir: string): () => Promise<void> {
+  liveTempDirs.add(dir);
+  if (!exitHookInstalled) {
+    exitHookInstalled = true;
+    process.once('exit', () => {
+      for (const d of liveTempDirs) rmSync(d, { recursive: true, force: true });
+    });
+  }
+  return async () => {
+    await rm(dir, { recursive: true, force: true });
+    liveTempDirs.delete(dir);
+  };
+}
+
+export function liveTempDirCount(): number {
+  return liveTempDirs.size;
 }
 
 const SCP_LIKE = /^[A-Za-z0-9._-]+@[A-Za-z0-9.-]+:[A-Za-z0-9._~/-]+$/;
@@ -64,7 +87,7 @@ export async function openRepository(target: string, opts: OpenOptions = {}): Pr
     const safe = stripUrlCredentials(target);
     opts.onBeforeClone?.(safe);
     const tmp = await mkdtemp(path.join(os.tmpdir(), 'glh-clone-'));
-    const cleanup = (): Promise<void> => rm(tmp, { recursive: true, force: true });
+    const cleanup = trackTempDir(tmp);
     try {
       const dir = path.join(tmp, 'repo.git');
       await runGit(['clone', '--bare', '--quiet', '--template=', '--', target, dir]);

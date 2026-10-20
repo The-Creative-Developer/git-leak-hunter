@@ -1,7 +1,7 @@
 # Architecture
 
-> Status: Phases 1–2 implemented (Git engine, detection, CI/CD parsing, reports). Verification
-> (Stage 3b) is Phase 3.
+> Status: Phases 1–3 implemented: Git engine, detection, CI/CD parsing, reports, hardening, and
+> opt-in verification. GitHub dorking (optional stretch) is not implemented.
 
 Git Leak Hunter scans the **entire reachable history** of a Git repository, not just the working
 tree, because a secret deleted in a later commit stays recoverable until history is rewritten.
@@ -89,8 +89,16 @@ so it is computed after the cache, in `src/analyze.ts`. With the cache on, the t
 the scanner function is called **exactly once per unique (blob, kind)** and that
 `uniqueBlobsScanned + cacheHits = fileVersionsSeen` (`test/integration/scan.test.ts`).
 
-Invariant (Phase 3 test): the set of scanned blob hashes equals the set of reachable blobs from
-`git rev-list --objects --all`, minus the deliberately skipped ones (binary, oversize, ignored).
+**Reachable-blob invariant** (`test/integration/invariant.test.ts`, every fixture repo, with and
+without ignore rules):
+
+```
+scannedBlobs ∪ skippedBlobs (binary, oversize, missing) ∪ ignoredBlobs
+    ==  blobs listed by `git rev-list --objects --all`
+```
+
+The test fails if any reachable blob was never considered. That includes content that exists only
+in a merge commit's conflict resolution.
 
 ## Stage 2 — Detection Engine (`src/detect/`)
 
@@ -117,9 +125,67 @@ re-scanned as text by the generic matcher (detector `ci`), so a broken file neve
 
 ## Stage 3b — Optional verification (`src/verify/`)
 
-Opt-in only (`--verify --confirm-authorized`), read-only, with a hard host allowlist
-(`sts.amazonaws.com`, `api.github.com`). Raw values live only in an in-memory vault that is dropped
-after verification. _TBD (Phase 3)._
+Runs only with **both** `--verify` and `--confirm-authorized`, and prints an authorized-use banner
+before any request.
+
+| Provider | The only call made                                                                                          | ACTIVE   | INACTIVE                                                                        | UNVERIFIABLE                                                                                             |
+| -------- | ----------------------------------------------------------------------------------------------------------- | -------- | ------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| AWS      | `POST https://sts.amazonaws.com/` `Action=GetCallerIdentity` (SigV4-signed with the paired key ID + secret) | HTTP 200 | `InvalidClientTokenId`, `SignatureDoesNotMatch`, `ExpiredToken`, `AccessDenied` | unpaired key, `ASIA`/`AIDA` (needs session token), throttling, network/timeout, other codes              |
+| GitHub   | `GET https://api.github.com/user`                                                                           | HTTP 200 | HTTP 401                                                                        | rate limited (429, or 403 with `x-ratelimit-remaining: 0` / `retry-after`), network/timeout, other codes |
+
+Guardrails (`src/verify/http.ts`, `src/verify/index.ts`):
+
+- **Host allowlist:** exact hosts only, `https:` only, no userinfo or port. Anything else throws
+  `HostNotAllowedError` before a request is made.
+- **No redirects** (`redirect: 'error'`), a 10 s timeout, and no retries.
+- **Pacing:** calls are sequential, 250 ms apart, with at most 25 per provider. The first
+  rate-limit or throttling response stops all further calls to that provider.
+- **Each unique credential is checked once.** An AWS pair is one call, and its result applies to
+  both findings.
+- **No account details are kept.** The GitHub response body is never read. The STS body is read
+  only for its error code; the account ID and ARN are discarded. `verificationNote` holds only
+  short status text.
+- **Raw values stay in memory.** When verification is on, `scanBlob` puts the raw values of
+  verifiable rules (AWS key ID / secret, GitHub tokens) into an in-memory `Vault` and gives each
+  match an opaque random `vaultRef`. `Finding` still has no raw field. The vault is cleared in a
+  `finally` block as soon as verification ends, and its `toJSON` prints only an entry count.
+- **ACTIVE means Critical** (severity table row 1).
+- **SigV4** is implemented in ~60 lines (`src/verify/sigv4.ts`) instead of adding
+  `@aws-sdk/client-sts` and its dependency tree. It is tested against AWS's published signing
+  vectors (signing-key derivation, `get-vanilla`, IAM `ListUsers`).
+
+Tests use mocked HTTP only. `test/integration/verify.test.ts` replaces the global `fetch` with a
+guard that **fails the test if any non-allowlisted host is contacted**. Other tests assert that no
+request is made at all without `--verify`.
+
+## Hardening (untrusted input)
+
+| Threat                                                                                       | Mitigation                                                                                                                                           | Test                                                      |
+| -------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
+| Hooks, fsmonitor, pager, `ext::`/`file://` transports, submodules run by the target's config | `-c` overrides on every git call; URL allowlist (`https`, `ssh`)                                                                                     | `repo.test.ts`, `cli.test.ts`, `remote.test.ts`           |
+| Env vars redirecting git (`GIT_DIR`, …); ssh prompts hanging a scan                          | stripped from the env; `GIT_TERMINAL_PROMPT=0`; default `ssh -o BatchMode=yes`                                                                       | `repo.test.ts`                                            |
+| Option injection via refs or paths                                                           | refs resolved with `--end-of-options`; only commit ids passed to `log`/`ls-tree`; `--` before paths                                                  | `log.test.ts`, `scan.test.ts`                             |
+| Forged commit boundaries in subjects/paths                                                   | NUL-separated tokens plus a random per-run marker nonce                                                                                              | `log.test.ts`                                             |
+| Weird file names (newline, tab, leading `-`, HTML)                                           | `-z` everywhere; paths are never passed as arguments; control chars shown as `\xNN`                                                                  | `hostile` fixture                                         |
+| XSS in paths, author names, commit messages                                                  | `esc()` on every dynamic value; strict CSP; no external resources                                                                                    | `scan.test.ts`                                            |
+| Regex DoS on attacker content                                                                | identifier-boundary lookbehind, bounded key/value lengths, char-bounded AWS pairing window, bounded context window, binary-search overlap resolution | `redos.test.ts` (inputs that previously took up to ~65 s) |
+| Huge files, binaries, missing objects                                                        | size cap (2 MiB default) checked with `cat-file info` before reading; NUL-byte sniff; missing objects counted in `skipped.missing`                   | `hostile` fixture, `invariant.test.ts`                    |
+| Malformed YAML                                                                               | falls back to text scanning                                                                                                                          | `ci.test.ts`                                              |
+| Temp clone left behind (errors, Ctrl-C)                                                      | `finally` cleanup plus a synchronous `exit` hook; the CLI turns SIGINT/SIGTERM into `process.exit`                                                   | `remote.test.ts`                                          |
+| Credentials in clone URLs                                                                    | stripped from notices, errors and the report                                                                                                         | `remote.test.ts`                                          |
+| Large histories                                                                              | streaming log parser, one `cat-file` process, per-blob memoization                                                                                   | `scale.test.ts` (2,000 commits)                           |
+
+## Known limitations
+
+- Blobs or trees reachable **only** through a ref or tag that points directly at a blob or tree,
+  rather than a commit, are not scanned: no commit exists to attribute them to. The invariant test
+  covers commit-reachable content only.
+- At the default entropy thresholds, about 1–3% of random 20–40 char secrets with no
+  recognisable format fail the entropy check (`docs/RULES.md`, measured).
+- `presence` is relative to HEAD (or the `--branch` tip). A secret that lives only on another
+  branch is reported as `history-only`.
+- Live verification covers AWS (long-term `AKIA` keys with a paired secret) and GitHub tokens
+  only.
 
 ## Stage 4 — Report Engine (`src/report/`)
 

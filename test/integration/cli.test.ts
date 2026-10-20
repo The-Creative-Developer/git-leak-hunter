@@ -223,7 +223,7 @@ describe('cli in-process (main)', () => {
     expect(res.code).toBe(1);
     expect(res.out).toContain('6 findings detected');
     expect(res.out).toContain('3 critical');
-    expect(res.out).toContain('skipped: 0 binary, 0 oversize, 1 ignored');
+    expect(res.out).toContain('skipped: 0 binary, 0 oversize, 1 ignored, 0 missing');
     expectNoLeak(res.out + res.err, f.rawSecrets, 'in-process output');
   });
 
@@ -237,16 +237,75 @@ describe('cli in-process (main)', () => {
     expect(noCi.out).toContain('CI/CD config scan skipped');
   });
 
-  it('rejects bad --since values and unimplemented --verify', async () => {
+  it('rejects bad --since values; --verify needs --confirm-authorized and prints a banner', async () => {
     const f = fx.get().fixtures.clean;
     expect((await capture(['scan', f.dir, '--since', '--all'])).code).toBe(2);
-    const v = await capture(['scan', f.dir, '--verify', '--confirm-authorized']);
-    expect(v.code).toBe(2);
-    expect(v.err).toContain('not available');
+    const refused = await capture(['scan', f.dir, '--out', path.join(fx.tmp(), 'v0'), '--verify']);
+    expect(refused.code).toBe(2);
+    // The clean repo has nothing verifiable, so no request is made.
+    const v = await capture([
+      'scan',
+      f.dir,
+      '--out',
+      path.join(fx.tmp(), 'v1'),
+      '--verify',
+      '--confirm-authorized',
+    ]);
+    expect(v.code).toBe(0);
+    expect(v.err).toContain('LIVE VERIFICATION ENABLED');
+    expect(v.out).toContain('0 AWS + 0 GitHub calls');
   });
 
   it('handles --help and --version in-process', async () => {
     expect((await capture(['--help'])).code).toBe(0);
     expect((await capture(['--version'])).out.trim()).toBe(VERSION);
+  });
+});
+
+describe('cli error paths', () => {
+  async function capture(args: string[]) {
+    let out = '';
+    let err = '';
+    const code = await main(['node', 'git-leak-hunter', ...args], {
+      out: (s) => (out += s),
+      err: (s) => (err += s),
+    });
+    return { code, out, err };
+  }
+
+  it('reports a missing git binary cleanly', async () => {
+    const saved = process.env.PATH;
+    process.env.PATH = path.join(fx.tmp(), 'no-bin-here');
+    try {
+      const res = await capture([
+        'scan',
+        fx.get().fixtures.clean.dir,
+        '--out',
+        path.join(fx.tmp(), 'nogit'),
+      ]);
+      expect(res.code).toBe(2);
+      expect(res.err).toMatch(/^error: could not run git/m);
+    } finally {
+      process.env.PATH = saved;
+    }
+  });
+
+  it('fails cleanly when the output path is a file', async () => {
+    const blocker = path.join(fx.tmp(), 'blocker');
+    await writeFile(blocker, 'x');
+    const res = await capture(['scan', fx.get().fixtures.clean.dir, '--out', blocker]);
+    expect(res.code).toBe(2);
+    expect(res.err).toMatch(/^error: /m);
+    expect(res.err).not.toMatch(/\n\s+at /);
+  });
+
+  it('fails cleanly on an unreadable ignore file and an invalid config', async () => {
+    const f = fx.get().fixtures.clean.dir;
+    expect((await capture(['scan', f, '--ignore', path.join(fx.tmp(), 'nope.txt')])).code).toBe(2);
+    const bad = path.join(fx.tmp(), 'bad.json');
+    await writeFile(bad, '{"entropy": {"hex": "high"}}');
+    const res = await capture(['scan', f, '--config', bad]);
+    expect(res.code).toBe(2);
+    expect(res.err).toContain('entropy.hex');
   });
 });

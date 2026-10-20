@@ -41,7 +41,7 @@ function sampleReport(): Report {
       cacheHits: 1,
       bytesScanned: 1234,
       durationMs: 12.5,
-      skipped: { binary: 0, oversize: 0, ignored: 0 },
+      skipped: { binary: 0, oversize: 0, ignored: 0, missing: 0 },
       suppressed: { uuid: 2, placeholder: 1 },
     },
     findings: [

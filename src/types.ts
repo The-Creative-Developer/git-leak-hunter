@@ -117,10 +117,13 @@ export interface Finding {
   pairedFingerprint?: string;
 }
 
+/** Unique blobs skipped as binary/oversize/missing; `ignored` counts file versions on ignored paths. */
 export interface SkipCounts {
   binary: number;
   oversize: number;
   ignored: number;
+  /** Objects absent from the object store (partial or shallow clone). */
+  missing: number;
 }
 
 /** Measured counters for one scan. Never estimated. */

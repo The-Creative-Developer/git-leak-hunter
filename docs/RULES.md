@@ -31,7 +31,7 @@ how it assigns severity. Code references are relative to `src/`.
 
 - **AWS pairing.** Each key ID is paired with the nearest unclaimed 40-char candidate within
   `AWS_PAIR_WINDOW = 5` lines. Both findings record `pairedFingerprint`. Live verification
-  (Phase 3) needs the pair.
+  (`--verify`) needs the pair.
 - **Private keys.** The whole block is one finding at the header line. Its preview is the header
   label without the PEM armor dashes plus the line count, e.g.
   `BEGIN RSA PRIVATE KEY [REDACTED, 14 lines]`. The dashes are dropped deliberately, so a report
@@ -110,6 +110,7 @@ the spec suggests, and the trade-off is documented here instead of hidden.
 | Length-normalised threshold (`LENGTH_FACTOR = 0.85`)                      | The fixed 4.5 threshold missed nearly all 24-char and a third of 32-char random secrets (table above).                                                                                                                                         |
 | Normalise at `max(n, minLength)`, not `n`                                 | A 9-char literal (`DB_PASSWORD: postgres1`) passed the normalised check and was rated High. It is now reported as a weak literal (Low).                                                                                                        |
 | Values under keys that do not look secret-like must also be ≥ `minLength` | On `ci-configs`, `DB_HOST=localhost`, `"type": "service_account"`, `DOCKER_DRIVER: overlay2`, `APP_ENV=production` and `region: us-east-1` were reported (5 false positives). After the change the repo yields exactly its 12 planted secrets. |
+| Unquoted values exclude `<>()[]{}`                                        | Dogfooding (scanning this repository) reported `tokens: AsyncIterable<string>` in `src/git/log.ts` as a Medium generic secret. The repository now scans with 0 findings.                                                                       |
 
 ## CI/CD and credential files (`ci/`, `detect/fileKind.ts`)
 
@@ -187,7 +188,7 @@ Critical, whatever the overrides say.
 
 | #   | Row id                     | Severity     | Condition                                                                                 |
 | --- | -------------------------- | ------------ | ----------------------------------------------------------------------------------------- |
-| 1   | `verified-active`          | **Critical** | live verification returned `ACTIVE` (Phase 3)                                             |
+| 1   | `verified-active`          | **Critical** | live verification returned `ACTIVE` (opt-in `--verify`)                                   |
 | 2   | `private-key-at-head`      | **Critical** | `private-key` still present at HEAD                                                       |
 | 3   | `live-payment-key-at-head` | **Critical** | `stripe-live-key` still present at HEAD                                                   |
 | 4   | `weak-literal`             | **Low**      | secret-like key with a low-entropy literal                                                |

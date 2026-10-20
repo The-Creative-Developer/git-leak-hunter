@@ -50,3 +50,18 @@ describe('remote targets', () => {
     }
   });
 });
+
+describe('ssh never prompts', () => {
+  it('defaults GIT_SSH_COMMAND to BatchMode but keeps a user-provided one', () => {
+    const saved = process.env.GIT_SSH_COMMAND;
+    delete process.env.GIT_SSH_COMMAND;
+    try {
+      expect(gitEnv().GIT_SSH_COMMAND).toBe('ssh -o BatchMode=yes');
+      process.env.GIT_SSH_COMMAND = 'ssh -i k';
+      expect(gitEnv().GIT_SSH_COMMAND).toBe('ssh -i k');
+    } finally {
+      if (saved === undefined) delete process.env.GIT_SSH_COMMAND;
+      else process.env.GIT_SSH_COMMAND = saved;
+    }
+  });
+});

@@ -58,6 +58,8 @@ const MAX_KEY_LINES = 200;
 /** 40-char AWS secret access key; only considered within AWS_PAIR_WINDOW lines of a key ID. */
 const AWS_SECRET = /(?<![A-Za-z0-9/+=])([A-Za-z0-9/+]{40})(?![A-Za-z0-9/+=])/g;
 export const AWS_PAIR_WINDOW = 5;
+/** Character cap on the pairing window, so one huge line cannot make pairing quadratic. */
+export const AWS_PAIR_MAX_CHARS = 1024;
 
 export function findSignatureCandidates(content: string): Candidate[] {
   const out: Candidate[] = [];
@@ -123,9 +125,14 @@ function addAwsSecretPairs(content: string, out: Candidate[]): void {
   const taken = new Set<number>();
   for (const { c, i } of keyIds) {
     const { line } = lineColumn(offsets, c.start);
-    const from = offsets[Math.max(0, line - 1 - AWS_PAIR_WINDOW)] ?? 0;
-    const toLine = line + AWS_PAIR_WINDOW;
-    const to = offsets[toLine] ?? content.length;
+    const from = Math.max(
+      offsets[Math.max(0, line - 1 - AWS_PAIR_WINDOW)] ?? 0,
+      c.start - AWS_PAIR_MAX_CHARS,
+    );
+    const to = Math.min(
+      offsets[line + AWS_PAIR_WINDOW] ?? content.length,
+      c.end + AWS_PAIR_MAX_CHARS,
+    );
     const window = content.slice(from, to);
     let best: { start: number; value: string; distance: number } | null = null;
     for (const m of window.matchAll(AWS_SECRET)) {

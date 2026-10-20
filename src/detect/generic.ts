@@ -7,8 +7,12 @@ import type { Candidate } from './types.js';
 import { isSecretLikeKey } from '../ci/common.js';
 
 // key ("quoted" or bare), an assignment operator, then a quoted or bare value — all on one line.
+// ReDoS guards (scanned content is attacker-controlled): a key may only start at an identifier
+// boundary, keys are at most 128 chars and values at most 512, so matching stays linear in the
+// line length. Unquoted values exclude brackets, so type annotations such as
+// `tokens: AsyncIterable<string>` are not taken for secrets.
 const ASSIGNMENT =
-  /["']?([A-Za-z_][A-Za-z0-9_.-]*)["']?[ \t]*(?:=>|:=|\?\?=|=|:)[ \t]*(?:(["'`])((?:\\.|(?!\2)[^\\\n])*)\2|([^\s"'`,;)\]}]+))/g;
+  /(?<![A-Za-z0-9_.-])["']?([A-Za-z_][A-Za-z0-9_.-]{0,127})["']?[ \t]*(?:=>|:=|\?\?=|=|:)[ \t]*(?:(["'`])((?:\\.|(?!\2)[^\\\n]){0,512})\2|([^\s"'`,;()[\]{}<>]{1,512}))/g;
 
 export interface GenericOptions {
   minLength: number;

@@ -24,6 +24,15 @@ describe('scanBlob', () => {
     ]);
   });
 
+  it('ignores type annotations and call expressions as unquoted values', () => {
+    const code = text(
+      'function parse(tokens: AsyncIterable<string>, marker: string) {}',
+      'const secretHandler: Map<string, Promise<void>> = new Map();',
+      'const token = computeTokenFromEnvironment(config);',
+    );
+    expect(scanBlob(unitOf(code), 'generic', detectConfig()).matches).toEqual([]);
+  });
+
   it('never puts a raw secret into its result', () => {
     const secrets = [f.githubToken(), f.generic(40), f.awsAccessKeyId(), f.awsSecretAccessKey()];
     const content = text(

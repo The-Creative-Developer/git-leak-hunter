@@ -57,6 +57,8 @@ export interface BlobMatch {
   weak: boolean;
   /** Keyed HMAC of the raw value with a per-run random key; used only to group occurrences. */
   digest: string;
+  /** Opaque vault reference (only with `--verify`, only for verifiable rules). */
+  vaultRef?: string;
   /** Index into the same result's `matches` of the paired match, if any. */
   pair?: number;
 }

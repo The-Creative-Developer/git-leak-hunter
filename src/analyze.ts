@@ -52,6 +52,8 @@ export interface AnalyzeOutput {
   findings: Finding[];
   /** Findings dropped by `fingerprint:` ignore rules. */
   ignoredByFingerprint: number;
+  /** fingerprint → vault reference, for findings whose raw value is held for verification. */
+  vaultRefs: Map<string, string>;
 }
 
 export function analyze(input: AnalyzeInput): AnalyzeOutput {
@@ -83,6 +85,7 @@ export function analyze(input: AnalyzeInput): AnalyzeOutput {
 
   const findings: Finding[] = [];
   let ignoredByFingerprint = 0;
+  const vaultRefs = new Map<string, string>();
   for (const [key, g] of groups) {
     const { fingerprint } = g;
     if (input.ignore?.fingerprints.has(fingerprint)) {
@@ -103,6 +106,7 @@ export function analyze(input: AnalyzeInput): AnalyzeOutput {
       input.severityOverrides,
     );
     const paired = g.pairKey ? groups.get(g.pairKey)?.fingerprint : undefined;
+    if (m.vaultRef) vaultRefs.set(fingerprint, m.vaultRef);
     findings.push({
       fingerprint,
       ruleId: m.ruleId,
@@ -130,7 +134,7 @@ export function analyze(input: AnalyzeInput): AnalyzeOutput {
       ...(paired ? { pairedFingerprint: paired } : {}),
     });
   }
-  return { findings: sortFindings(findings), ignoredByFingerprint };
+  return { findings: sortFindings(findings), ignoredByFingerprint, vaultRefs };
 }
 
 const RANK = { critical: 4, high: 3, medium: 2, low: 1 } as const;

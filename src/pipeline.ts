@@ -8,7 +8,7 @@ import path from 'node:path';
 import type { Report, ScanOptions, ScanStats, SuppressionReason } from './types.js';
 import { analyze } from './analyze.js';
 import { gitlabLocalIncludes } from './ci/index.js';
-import { scanBlob } from './detect/engine.js';
+import { scanBlob, type DetectConfig } from './detect/engine.js';
 import { LENGTH_FACTOR } from './detect/entropy.js';
 import { fileKindOf } from './detect/fileKind.js';
 import { emptyIgnoreRules, isIgnoredPath, parseIgnore, type IgnoreRules } from './detect/ignore.js';
@@ -19,6 +19,13 @@ import { scanHistory, type BlobScanner } from './git/index.js';
 import { openRepository, resolveRef } from './git/repo.js';
 import { renderHtml } from './report/html.js';
 import { buildReport, renderJson } from './report/json.js';
+import {
+  Vault,
+  VERIFIABLE_RULES,
+  verifyFindings,
+  type VerifyOptions,
+  type VerifySummary,
+} from './verify/index.js';
 
 /** Bump when detection rules change: invalidates cached results (part of the cache key). */
 export const RULESET_VERSION = '1';
@@ -45,6 +52,10 @@ export interface ScanHooks {
   onBeforeClone?: (safeUrl: string) => void;
   /** Test seam: wrap or replace the per-blob scanner (e.g. to count calls). */
   wrapScanner?: (scanner: BlobScanner) => BlobScanner;
+  /** Called before any verification request, with the number of verifiable findings. */
+  onVerifyStart?: (verifiable: number) => void;
+  /** Verification transport/timing (tests inject a mock fetch and zero delay). */
+  verify?: VerifyOptions;
 }
 
 export interface ScanResult {
@@ -55,6 +66,9 @@ export interface ScanResult {
   /** Blob ids scanned / skipped (for the reachable-blob invariant test). */
   scannedBlobs: Set<string>;
   skippedBlobs: Set<string>;
+  ignoredBlobs: Set<string>;
+  /** Present when `--verify` ran. */
+  verification?: VerifySummary;
 }
 
 export function configHashOf(options: ScanOptions): string {
@@ -91,6 +105,8 @@ export async function runScan(req: ScanRequest, hooks: ScanHooks = {}): Promise<
     req.target,
     hooks.onBeforeClone ? { onBeforeClone: hooks.onBeforeClone } : {},
   );
+  // Raw verifiable secrets are kept only when the user opted in, and cleared before returning.
+  const vault = req.options.verify ? new Vault() : undefined;
   try {
     const opts = req.options;
     const tip = opts.branch ? await resolveRef(repo.dir, opts.branch) : repo.head;
@@ -112,7 +128,11 @@ export async function runScan(req: ScanRequest, hooks: ScanHooks = {}): Promise<
       return kind;
     };
 
-    const detectCfg = { entropy: opts.entropy, runKey: randomBytes(32) };
+    const detectCfg: DetectConfig = {
+      entropy: opts.entropy,
+      runKey: randomBytes(32),
+      ...(vault ? { vault } : {}),
+    };
     const baseScanner: BlobScanner = (unit, kind) => scanBlob(unit, kind, detectCfg);
     const scanner = hooks.wrapScanner ? hooks.wrapScanner(baseScanner) : baseScanner;
     const configHash = configHashOf(opts);
@@ -133,12 +153,26 @@ export async function runScan(req: ScanRequest, hooks: ScanHooks = {}): Promise<
       maxFileBytes: opts.maxFileBytes,
     });
 
-    const { findings, ignoredByFingerprint } = analyze({
+    const analyzed = analyze({
       occurrences: history.occurrences,
       headResults: history.headResults,
       ...(req.severityOverrides ? { severityOverrides: req.severityOverrides } : {}),
       ignore,
     });
+    const { ignoredByFingerprint } = analyzed;
+    let { findings } = analyzed;
+
+    // VERIFY (opt-in): read-only, allowlisted calls; the vault is cleared inside.
+    let verification: VerifySummary | undefined;
+    if (vault) {
+      hooks.onVerifyStart?.(findings.filter((f) => VERIFIABLE_RULES.has(f.ruleId)).length);
+      ({ findings, summary: verification } = await verifyFindings(
+        findings,
+        analyzed.vaultRefs,
+        vault,
+        hooks.verify,
+      ));
+    }
 
     const suppressed: Partial<Record<SuppressionReason, number>> = { ...history.suppressed };
     if (ignoredByFingerprint > 0)
@@ -172,8 +206,11 @@ export async function runScan(req: ScanRequest, hooks: ScanHooks = {}): Promise<
       ciFiles: ciPaths.size,
       scannedBlobs: history.scannedBlobs,
       skippedBlobs: history.skippedBlobs,
+      ignoredBlobs: history.ignoredBlobs,
+      ...(verification ? { verification } : {}),
     };
   } finally {
+    vault?.clear();
     await repo.cleanup();
   }
 }
