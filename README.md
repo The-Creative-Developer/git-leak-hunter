@@ -201,8 +201,8 @@ Ethical Hacking course project, **Group 34**:
 
 | Name              | Roll no. |
 | ----------------- | -------- |
-| Pruthvi Gangapure | 12413969 |
-| Prathamesh Yewale | 12415034 |
+| Pruthvi Gangapure | 12415034 |
+| Prathamesh Yewale | 12413969 |
 | Yash Waghmare     | 12410801 |
 | Chetan Thakur     | 12413081 |
 
