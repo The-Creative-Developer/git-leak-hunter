@@ -24,8 +24,9 @@ describe('scanBlob', () => {
     ]);
   });
 
-  it('ignores type annotations and call expressions as unquoted values', () => {
+  it('ignores type annotations, call expressions and interpolated strings', () => {
     const code = text(
+      'const headers = { authorization: `AWS4-HMAC-SHA256 Credential=${id}/${scope}, Signature=${sig}` };',
       'function parse(tokens: AsyncIterable<string>, marker: string) {}',
       'const secretHandler: Map<string, Promise<void>> = new Map();',
       'const token = computeTokenFromEnvironment(config);',

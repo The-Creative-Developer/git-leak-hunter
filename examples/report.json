@@ -1,0 +1,356 @@
+{
+  "schemaVersion": "1.0",
+  "tool": {
+    "name": "git-leak-hunter",
+    "version": "0.1.0"
+  },
+  "repository": {
+    "target": "ci-configs",
+    "head": "07dda7a82f0fbfe23e3bb4ee6a36daa418feb285"
+  },
+  "scan": {
+    "startedAt": "2026-10-20T17:23:28.872Z",
+    "finishedAt": "2026-10-20T17:23:28.978Z",
+    "configHash": "b26f2e407f9c5064",
+    "options": {
+      "entropy": {
+        "hex": 3,
+        "base64": 4.5,
+        "minLength": 20
+      },
+      "ci": true,
+      "cache": true,
+      "verify": false,
+      "maxFileBytes": 2097152
+    }
+  },
+  "summary": {
+    "total": 12,
+    "bySeverity": {
+      "critical": 1,
+      "high": 11,
+      "medium": 0,
+      "low": 0
+    },
+    "inHead": 11,
+    "historyOnly": 1
+  },
+  "stats": {
+    "commitsWalked": 4,
+    "fileVersionsSeen": 8,
+    "uniqueBlobsScanned": 8,
+    "cacheHits": 0,
+    "bytesScanned": 2258,
+    "durationMs": 46.3,
+    "skipped": {
+      "binary": 0,
+      "oversize": 0,
+      "ignored": 0,
+      "missing": 0
+    },
+    "suppressed": {
+      "ci-expression": 1
+    }
+  },
+  "findings": [
+    {
+      "fingerprint": "fd8e922094b8e18075e5c4c5e048ad37",
+      "ruleId": "private-key",
+      "secretType": "Private Key",
+      "detector": "signature",
+      "severity": "critical",
+      "filePath": ".ssh/id_rsa",
+      "commitHash": "ed6879cbdf854f01fe22001352ef29476873d450",
+      "line": 1,
+      "column": 1,
+      "redactedPreview": "BEGIN OPENSSH PRIVATE KEY [REDACTED, 14 lines]",
+      "redactedContext": "BEGIN OPENSSH PRIVATE KEY [REDACTED, 14 lines]",
+      "blobHash": "975854feff3cc4a13f63103dd67542758712ccf3",
+      "author": {
+        "name": "Fixture Bot",
+        "email": "fixture-bot@example.test"
+      },
+      "date": "2025-01-06T11:00:00Z",
+      "commitSubject": "Add local environment files",
+      "firstSeenCommit": "ed6879cbdf854f01fe22001352ef29476873d450",
+      "otherCommitCount": 0,
+      "presence": "in-HEAD",
+      "verificationStatus": "NOT_CHECKED"
+    },
+    {
+      "fingerprint": "f773876ab82d07956c4a8f6ffa08c460",
+      "ruleId": "dotenv-secret",
+      "secretType": "Secret in .env File",
+      "detector": "credential-file",
+      "severity": "high",
+      "filePath": ".env",
+      "commitHash": "ed6879cbdf854f01fe22001352ef29476873d450",
+      "line": 2,
+      "column": 13,
+      "redactedPreview": "nLQF****************spqw",
+      "redactedContext": "DB_PASSWORD=nLQF****************spqw",
+      "entropy": 4.335,
+      "blobHash": "9d69591dcc0962a6ec6b2b21961fb52b0928f95a",
+      "author": {
+        "name": "Fixture Bot",
+        "email": "fixture-bot@example.test"
+      },
+      "date": "2025-01-06T11:00:00Z",
+      "commitSubject": "Add local environment files",
+      "firstSeenCommit": "ed6879cbdf854f01fe22001352ef29476873d450",
+      "otherCommitCount": 0,
+      "presence": "in-HEAD",
+      "verificationStatus": "NOT_CHECKED"
+    },
+    {
+      "fingerprint": "d9f8a9bc7379ed261af42bec03884ea8",
+      "ruleId": "npmrc-auth-token",
+      "secretType": "npm Auth Token",
+      "detector": "credential-file",
+      "severity": "high",
+      "filePath": ".npmrc",
+      "commitHash": "ed6879cbdf854f01fe22001352ef29476873d450",
+      "line": 1,
+      "column": 34,
+      "redactedPreview": "npm_****************rO5F",
+      "redactedContext": "//registry.npmjs.org/:_authToken=npm_****************rO5F",
+      "entropy": 4.715,
+      "blobHash": "24fb02988c9816f5fd702c17b72f6f0a182b6a88",
+      "author": {
+        "name": "Fixture Bot",
+        "email": "fixture-bot@example.test"
+      },
+      "date": "2025-01-06T11:00:00Z",
+      "commitSubject": "Add local environment files",
+      "firstSeenCommit": "ed6879cbdf854f01fe22001352ef29476873d450",
+      "otherCommitCount": 0,
+      "presence": "in-HEAD",
+      "verificationStatus": "NOT_CHECKED"
+    },
+    {
+      "fingerprint": "707c670c95d993fb80a78da4c7779e9f",
+      "ruleId": "credentials-json-secret",
+      "secretType": "Secret in Credentials File",
+      "detector": "credential-file",
+      "severity": "high",
+      "filePath": "config/credentials.json",
+      "commitHash": "ed6879cbdf854f01fe22001352ef29476873d450",
+      "line": 3,
+      "column": 21,
+      "redactedPreview": "Zqqs****************BzZk",
+      "redactedContext": "  \"client_secret\": \"Zqqs****************BzZk\"",
+      "entropy": 4.734,
+      "blobHash": "12858e7353064a2ce4dc1d8d01d7deb50b5a74be",
+      "author": {
+        "name": "Fixture Bot",
+        "email": "fixture-bot@example.test"
+      },
+      "date": "2025-01-06T11:00:00Z",
+      "commitSubject": "Add local environment files",
+      "firstSeenCommit": "ed6879cbdf854f01fe22001352ef29476873d450",
+      "otherCommitCount": 0,
+      "presence": "in-HEAD",
+      "verificationStatus": "NOT_CHECKED"
+    },
+    {
+      "fingerprint": "dcebf512787d0f4dd3208177e3fc2be4",
+      "ruleId": "gitlab-ci-literal",
+      "secretType": "GitLab CI Literal Secret",
+      "detector": "ci",
+      "severity": "high",
+      "filePath": ".gitlab-ci.yml",
+      "commitHash": "b87205da5057393f6dc9103074efa23e5c1e15d7",
+      "line": 2,
+      "column": 23,
+      "redactedPreview": "EMFs****************oIwY",
+      "redactedContext": "  REGISTRY_PASSWORD: \"EMFs****************oIwY\"",
+      "entropy": 4.522,
+      "blobHash": "1224675ffd7fea840db4db766ab28cf3bc572728",
+      "author": {
+        "name": "Fixture Bot",
+        "email": "fixture-bot@example.test"
+      },
+      "date": "2025-01-06T10:00:00Z",
+      "commitSubject": "Add GitLab CI and Dockerfile",
+      "firstSeenCommit": "b87205da5057393f6dc9103074efa23e5c1e15d7",
+      "otherCommitCount": 0,
+      "presence": "in-HEAD",
+      "verificationStatus": "NOT_CHECKED"
+    },
+    {
+      "fingerprint": "6b90663695eaa3f8383c1e437bedf6a5",
+      "ruleId": "gitlab-ci-literal",
+      "secretType": "GitLab CI Literal Secret",
+      "detector": "ci",
+      "severity": "high",
+      "filePath": ".gitlab-ci.yml",
+      "commitHash": "b87205da5057393f6dc9103074efa23e5c1e15d7",
+      "line": 9,
+      "column": 18,
+      "redactedPreview": "a8DD****************dLdP",
+      "redactedContext": "    SONAR_TOKEN: a8DD****************dLdP",
+      "entropy": 4.625,
+      "blobHash": "1224675ffd7fea840db4db766ab28cf3bc572728",
+      "author": {
+        "name": "Fixture Bot",
+        "email": "fixture-bot@example.test"
+      },
+      "date": "2025-01-06T10:00:00Z",
+      "commitSubject": "Add GitLab CI and Dockerfile",
+      "firstSeenCommit": "b87205da5057393f6dc9103074efa23e5c1e15d7",
+      "otherCommitCount": 0,
+      "presence": "in-HEAD",
+      "verificationStatus": "NOT_CHECKED"
+    },
+    {
+      "fingerprint": "6c167fd5b6418c7b32bb3764f4d32020",
+      "ruleId": "dockerfile-literal",
+      "secretType": "Dockerfile ENV/ARG Secret",
+      "detector": "ci",
+      "severity": "high",
+      "filePath": "Dockerfile",
+      "commitHash": "b87205da5057393f6dc9103074efa23e5c1e15d7",
+      "line": 2,
+      "column": 15,
+      "redactedPreview": "8NOM****************ptkr",
+      "redactedContext": "ARG NPM_TOKEN=8NOM****************ptkr",
+      "entropy": 4.476,
+      "blobHash": "2b36c5f7cdaaf6a47f712f159ef7dd43970173bf",
+      "author": {
+        "name": "Fixture Bot",
+        "email": "fixture-bot@example.test"
+      },
+      "date": "2025-01-06T10:00:00Z",
+      "commitSubject": "Add GitLab CI and Dockerfile",
+      "firstSeenCommit": "b87205da5057393f6dc9103074efa23e5c1e15d7",
+      "otherCommitCount": 0,
+      "presence": "in-HEAD",
+      "verificationStatus": "NOT_CHECKED"
+    },
+    {
+      "fingerprint": "229f58a7bddc5bb12c249edcf65f55be",
+      "ruleId": "dockerfile-literal",
+      "secretType": "Dockerfile ENV/ARG Secret",
+      "detector": "ci",
+      "severity": "high",
+      "filePath": "Dockerfile",
+      "commitHash": "b87205da5057393f6dc9103074efa23e5c1e15d7",
+      "line": 4,
+      "column": 16,
+      "redactedPreview": "izhT****************4sN5",
+      "redactedContext": "    API_SECRET=izhT****************4sN5",
+      "entropy": 4.625,
+      "blobHash": "2b36c5f7cdaaf6a47f712f159ef7dd43970173bf",
+      "author": {
+        "name": "Fixture Bot",
+        "email": "fixture-bot@example.test"
+      },
+      "date": "2025-01-06T10:00:00Z",
+      "commitSubject": "Add GitLab CI and Dockerfile",
+      "firstSeenCommit": "b87205da5057393f6dc9103074efa23e5c1e15d7",
+      "otherCommitCount": 0,
+      "presence": "in-HEAD",
+      "verificationStatus": "NOT_CHECKED"
+    },
+    {
+      "fingerprint": "fec8e4afb485eef99ccd2626624e797b",
+      "ruleId": "dockerfile-literal",
+      "secretType": "Dockerfile ENV/ARG Secret",
+      "detector": "ci",
+      "severity": "high",
+      "filePath": "Dockerfile",
+      "commitHash": "b87205da5057393f6dc9103074efa23e5c1e15d7",
+      "line": 5,
+      "column": 22,
+      "redactedPreview": "xZmP****************xYBL",
+      "redactedContext": "ENV SERVICE_PASSWORD xZmP****************xYBL",
+      "entropy": 3.939,
+      "blobHash": "2b36c5f7cdaaf6a47f712f159ef7dd43970173bf",
+      "author": {
+        "name": "Fixture Bot",
+        "email": "fixture-bot@example.test"
+      },
+      "date": "2025-01-06T10:00:00Z",
+      "commitSubject": "Add GitLab CI and Dockerfile",
+      "firstSeenCommit": "b87205da5057393f6dc9103074efa23e5c1e15d7",
+      "otherCommitCount": 0,
+      "presence": "in-HEAD",
+      "verificationStatus": "NOT_CHECKED"
+    },
+    {
+      "fingerprint": "95c998c2573389e6a2b4c02d35aab6a3",
+      "ruleId": "github-actions-literal",
+      "secretType": "GitHub Actions Literal Secret",
+      "detector": "ci",
+      "severity": "high",
+      "filePath": ".github/workflows/deploy.yml",
+      "commitHash": "ced1a10670d20e369ef4a4f8e5aa662781b9b2cc",
+      "line": 4,
+      "column": 19,
+      "redactedPreview": "LCS3****************dWF0",
+      "redactedContext": "  DEPLOY_API_KEY: LCS3****************dWF0",
+      "entropy": 4.625,
+      "blobHash": "240e2e2466032dbbd0910be5cb0fbe0fa5ff6496",
+      "author": {
+        "name": "Fixture Bot",
+        "email": "fixture-bot@example.test"
+      },
+      "date": "2025-01-06T09:00:00Z",
+      "commitSubject": "Add deploy workflow",
+      "firstSeenCommit": "ced1a10670d20e369ef4a4f8e5aa662781b9b2cc",
+      "otherCommitCount": 0,
+      "presence": "history-only",
+      "verificationStatus": "NOT_CHECKED"
+    },
+    {
+      "fingerprint": "65b48b81eae1b21448b24aa3ffac6248",
+      "ruleId": "github-actions-literal",
+      "secretType": "GitHub Actions Literal Secret",
+      "detector": "ci",
+      "severity": "high",
+      "filePath": ".github/workflows/deploy.yml",
+      "commitHash": "ced1a10670d20e369ef4a4f8e5aa662781b9b2cc",
+      "line": 9,
+      "column": 27,
+      "redactedPreview": "dzEp****************9iB7",
+      "redactedContext": "      DATABASE_PASSWORD: \"dzEp****************9iB7\"",
+      "entropy": 4.168,
+      "blobHash": "240e2e2466032dbbd0910be5cb0fbe0fa5ff6496",
+      "author": {
+        "name": "Fixture Bot",
+        "email": "fixture-bot@example.test"
+      },
+      "date": "2025-01-06T09:00:00Z",
+      "commitSubject": "Add deploy workflow",
+      "firstSeenCommit": "ced1a10670d20e369ef4a4f8e5aa662781b9b2cc",
+      "otherCommitCount": 1,
+      "presence": "in-HEAD",
+      "verificationStatus": "NOT_CHECKED"
+    },
+    {
+      "fingerprint": "fe76382328bad26e720268d7081c6d43",
+      "ruleId": "github-actions-literal",
+      "secretType": "GitHub Actions Literal Secret",
+      "detector": "ci",
+      "severity": "high",
+      "filePath": ".github/workflows/deploy.yml",
+      "commitHash": "ced1a10670d20e369ef4a4f8e5aa662781b9b2cc",
+      "line": 15,
+      "column": 22,
+      "redactedPreview": "Gr9Y****************vLWH",
+      "redactedContext": "          api_token: Gr9Y****************vLWH",
+      "entropy": 4.5,
+      "blobHash": "240e2e2466032dbbd0910be5cb0fbe0fa5ff6496",
+      "author": {
+        "name": "Fixture Bot",
+        "email": "fixture-bot@example.test"
+      },
+      "date": "2025-01-06T09:00:00Z",
+      "commitSubject": "Add deploy workflow",
+      "firstSeenCommit": "ced1a10670d20e369ef4a4f8e5aa662781b9b2cc",
+      "otherCommitCount": 1,
+      "presence": "in-HEAD",
+      "verificationStatus": "NOT_CHECKED"
+    }
+  ]
+}

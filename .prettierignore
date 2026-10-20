@@ -5,3 +5,5 @@ package-lock.json
 leak-report
 .fixtures
 examples/report.html
+bench/results
+examples/report.json

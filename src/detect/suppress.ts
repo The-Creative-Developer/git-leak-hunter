@@ -38,6 +38,7 @@ const ANGLE_PLACEHOLDER = /^<[^<>]+>$/;
 const CI_EXPRESSION = /\$\{\{.*\}\}/;
 const ENV_REFERENCE =
   /^(?:\$\{?[A-Za-z_][A-Za-z0-9_]*\}?|%[A-Za-z_][A-Za-z0-9_]*%|\{\{.*\}\})$|process\.env\.|os\.environ|getenv\(|ENV\[/;
+const INTERPOLATION = /\$\{[^}]+\}/;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const GIT_SHA = /^[0-9a-f]{40}$/;
 const INTEGRITY = /^(?:sha(?:1|256|384|512)-[A-Za-z0-9+/=]+|h1:[A-Za-z0-9+/=]+)$/;
@@ -71,6 +72,8 @@ export function suppressionReason(value: string, ctx: SuppressContext): Suppress
   }
   if (CI_EXPRESSION.test(value)) return 'ci-expression';
   if (ENV_REFERENCE.test(value)) return 'env-reference';
+  // Interpolated strings (`Bearer ${token}`, shell "${A}:${B}") are built at runtime, not literals.
+  if (INTERPOLATION.test(value)) return 'env-reference';
   if (ANGLE_PLACEHOLDER.test(value) || PLACEHOLDER_WORDS.test(value)) return 'placeholder';
   if (UUID.test(value)) return 'uuid';
   if (GIT_SHA.test(value)) return 'git-sha';

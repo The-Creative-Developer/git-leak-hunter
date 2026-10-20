@@ -24,7 +24,12 @@
     "coverage": "vitest run --coverage",
     "dev": "tsx src/cli.ts",
     "fixtures": "tsx test/fixtures/cli.ts",
-    "check": "npm run typecheck && npm run lint && npm run format:check && npm test"
+    "check": "npm run typecheck && npm run lint && npm run format:check && npm test",
+    "bench:accuracy": "tsx bench/accuracy.ts",
+    "bench:memo": "tsx bench/memoization.ts 5",
+    "bench:entropy": "tsx bench/entropy-calibration.ts 10000",
+    "bench:report": "tsx bench/report.ts && prettier --write docs/BENCHMARK.md",
+    "bench": "npm run bench:accuracy && npm run bench:memo && npm run bench:report"
   },
   "dependencies": {
     "commander": "14.0.3",

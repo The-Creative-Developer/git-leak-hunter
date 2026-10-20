@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'">
+<meta name="referrer" content="no-referrer">
+<title>Git Leak Hunter Report</title>
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--ink:#14171c;--muted:#5b6370;--line:#dde1e7;--mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+--critical:#b3261e;--high:#c2410c;--medium:#a16207;--low:#2f6f4f;--accent:#1f4fd1;--hist:#6d28d9}
+@media (prefers-color-scheme:dark){:root{--bg:#0f1115;--card:#181b21;--ink:#e8eaee;--muted:#9aa3b2;--line:#2a2f38;
+--critical:#ff6b61;--high:#ff8a4c;--medium:#e3b341;--low:#5cc48d;--accent:#7aa2ff;--hist:#b794f6}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:1100px;margin:0 auto;padding:24px 16px 64px}
+h1{font-size:13px;letter-spacing:.14em;color:var(--muted);margin:0 0 4px;font-weight:600}
+h2{font-size:13px;letter-spacing:.12em;color:var(--muted);margin:32px 0 12px;font-weight:600}
+.title{font-size:26px;font-weight:700;margin:0 0 20px}
+.meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:16px}
+.box{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px;min-width:0}
+.k{font-size:11px;letter-spacing:.12em;color:var(--muted);font-weight:600;text-transform:uppercase}
+.v{font-size:15px;overflow-wrap:anywhere}
+.mono{font-family:var(--mono);font-size:13px}
+.counts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.count{border-left:6px solid var(--c);}
+.count .n{font-size:30px;font-weight:700;color:var(--c)}
+.sev-critical{--c:var(--critical)}.sev-high{--c:var(--high)}.sev-medium{--c:var(--medium)}.sev-low{--c:var(--low)}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
+.controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:8px 0 16px}
+.controls button,.controls select{font:inherit;font-size:13px;padding:6px 12px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer}
+.controls button[aria-pressed="true"]{border-color:var(--accent);color:var(--accent);font-weight:600}
+.card{background:var(--card);border:1px solid var(--line);border-left:6px solid var(--c);border-radius:10px;padding:16px;margin-bottom:14px;break-inside:avoid}
+.card-head{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;margin-bottom:12px}
+.badge{display:inline-block;font-size:12px;font-weight:700;letter-spacing:.1em;padding:3px 10px;border-radius:6px;border:2px solid var(--c);color:var(--c)}
+.type{font-size:17px;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+.presence{font-size:12px;font-weight:700;letter-spacing:.06em;padding:3px 10px;border-radius:6px;border:1px dashed var(--line);color:var(--muted)}
+.presence.hist{border:2px solid var(--hist);color:var(--hist)}
+.fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px 18px}
+.preview{font-family:var(--mono);font-size:14px;background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:2px 8px;display:inline-block;overflow-wrap:anywhere}
+details{margin-top:12px}
+summary{cursor:pointer;color:var(--accent);font-size:13px}
+pre{white-space:pre-wrap;overflow-wrap:anywhere;font-family:var(--mono);font-size:12.5px;background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:8px 10px;margin:8px 0 0}
+.empty{padding:28px;text-align:center;color:var(--muted)}
+.warn{border:1px solid var(--line);border-radius:10px;padding:10px 14px;color:var(--muted);font-size:13px;margin-top:24px}
+footer{margin-top:32px;color:var(--muted);font-size:12px}
+@media (max-width:640px){.counts{grid-template-columns:repeat(2,minmax(0,1fr))}.title{font-size:22px}}
+@media print{body{background:#fff;color:#000}.controls{display:none}.card,.box{border-color:#999}details{display:block}details>*{display:block}}
+</style>
+</head>
+<body>
+<main>
+<h1>GIT LEAK HUNTER · SECURITY REPORT</h1>
+<p class="title">ci-configs</p>
+<section class="meta">
+<div class="box"><div class="k">Repository</div><div class="v mono">ci-configs</div></div>
+<div class="box"><div class="k">Scan date</div><div class="v">2026-10-20T17:23:28.978Z</div></div>
+<div class="box"><div class="k">HEAD</div><div class="v mono">07dda7a82f0f</div></div>
+<div class="box"><div class="k">Total findings</div><div class="v">12</div></div>
+</section>
+<section class="counts" aria-label="Findings by severity"><div class="box count sev-critical"><div class="k">CRITICAL</div><div class="n">1</div></div><div class="box count sev-high"><div class="k">HIGH</div><div class="n">11</div></div><div class="box count sev-medium"><div class="k">MEDIUM</div><div class="n">0</div></div><div class="box count sev-low"><div class="k">LOW</div><div class="n">0</div></div></section>
+<h2>SCAN STATS</h2>
+<section class="stats"><div class="box"><div class="k">Commits walked</div><div class="v">4</div></div><div class="box"><div class="k">File versions seen</div><div class="v">8</div></div><div class="box"><div class="k">Unique blobs scanned</div><div class="v">8</div></div><div class="box"><div class="k">Cache hits</div><div class="v">0</div></div><div class="box"><div class="k">Bytes scanned</div><div class="v">2258</div></div><div class="box"><div class="k">Duration</div><div class="v">46.3 ms</div></div><div class="box"><div class="k">Skipped (binary / oversize / ignored / missing)</div><div class="v">0 / 0 / 0 / 0</div></div><div class="box"><div class="k">History-only findings</div><div class="v">1</div></div></section>
+<h2>FINDINGS (<span id="shown">12</span>)</h2>
+<div class="controls" role="toolbar" aria-label="Filter findings"><button type="button" data-filter-sev="all" aria-pressed="true">All</button><button type="button" data-filter-sev="critical" aria-pressed="false">CRITICAL</button><button type="button" data-filter-sev="high" aria-pressed="false">HIGH</button><button type="button" data-filter-sev="medium" aria-pressed="false">MEDIUM</button><button type="button" data-filter-sev="low" aria-pressed="false">LOW</button>
+<select id="presence" aria-label="Presence"><option value="all">In HEAD + history-only</option><option value="in-HEAD">Present at HEAD</option><option value="history-only">History-only</option></select>
+<select id="sort" aria-label="Sort"><option value="severity">Sort: severity</option><option value="recent">Sort: most recent</option></select>
+</div>
+<section id="findings">
+<article class="card sev-critical" data-severity="critical" data-presence="in-HEAD" data-order="0" data-time="1736161200000">
+<div class="card-head"><span class="badge">CRITICAL</span><span class="type">Private Key</span><span class="presence">PRESENT AT HEAD</span></div>
+<div class="fields">
+<div><div class="k">File path</div><div class="v mono">.ssh/id_rsa</div></div>
+<div><div class="k">Commit hash</div><div class="v mono">ed6879c</div></div>
+<div><div class="k">Line number</div><div class="v">1</div></div>
+<div><div class="k">Redacted preview</div><div class="v"><span class="preview">BEGIN OPENSSH PRIVATE KEY [REDACTED, 14 lines]</span></div></div>
+<div><div class="k">Verification status</div><div class="v">NOT CHECKED</div></div>
+</div>
+<details><summary>Details</summary>
+<div class="fields" style="margin-top:10px"><div><div class="k">Rule</div><div class="v mono">private-key</div></div><div><div class="k">Detector</div><div class="v">signature</div></div><div><div class="k">First seen commit</div><div class="v mono">ed6879cbdf854f01fe22001352ef29476873d450</div></div><div><div class="k">Other commits containing it</div><div class="v">0</div></div><div><div class="k">Author</div><div class="v">Fixture Bot &lt;fixture-bot@example.test&gt;</div></div><div><div class="k">Date</div><div class="v">2025-01-06T11:00:00Z</div></div><div><div class="k">Blob</div><div class="v mono">975854feff3cc4a13f63103dd67542758712ccf3</div></div><div><div class="k">Fingerprint</div><div class="v mono">fd8e922094b8e18075e5c4c5e048ad37</div></div></div>
+<div class="k" style="margin-top:12px">Commit message</div><pre>Add local environment files</pre>
+<div class="k" style="margin-top:12px">Context (redacted)</div><pre>BEGIN OPENSSH PRIVATE KEY [REDACTED, 14 lines]</pre>
+</details>
+</article>
+<article class="card sev-high" data-severity="high" data-presence="in-HEAD" data-order="1" data-time="1736161200000">
+<div class="card-head"><span class="badge">HIGH</span><span class="type">Secret in .env File</span><span class="presence">PRESENT AT HEAD</span></div>
+<div class="fields">
+<div><div class="k">File path</div><div class="v mono">.env</div></div>
+<div><div class="k">Commit hash</div><div class="v mono">ed6879c</div></div>
+<div><div class="k">Line number</div><div class="v">2</div></div>
+<div><div class="k">Redacted preview</div><div class="v"><span class="preview">nLQF****************spqw</span></div></div>
+<div><div class="k">Verification status</div><div class="v">NOT CHECKED</div></div>
+</div>
+<details><summary>Details</summary>
+<div class="fields" style="margin-top:10px"><div><div class="k">Rule</div><div class="v mono">dotenv-secret</div></div><div><div class="k">Detector</div><div class="v">credential-file</div></div><div><div class="k">Entropy</div><div class="v">4.33 bits/char</div></div><div><div class="k">First seen commit</div><div class="v mono">ed6879cbdf854f01fe22001352ef29476873d450</div></div><div><div class="k">Other commits containing it</div><div class="v">0</div></div><div><div class="k">Author</div><div class="v">Fixture Bot &lt;fixture-bot@example.test&gt;</div></div><div><div class="k">Date</div><div class="v">2025-01-06T11:00:00Z</div></div><div><div class="k">Blob</div><div class="v mono">9d69591dcc0962a6ec6b2b21961fb52b0928f95a</div></div><div><div class="k">Fingerprint</div><div class="v mono">f773876ab82d07956c4a8f6ffa08c460</div></div></div>
+<div class="k" style="margin-top:12px">Commit message</div><pre>Add local environment files</pre>
+<div class="k" style="margin-top:12px">Context (redacted)</div><pre>DB_PASSWORD=nLQF****************spqw</pre>
+</details>
+</article>
+<article class="card sev-high" data-severity="high" data-presence="in-HEAD" data-order="2" data-time="1736161200000">
+<div class="card-head"><span class="badge">HIGH</span><span class="type">npm Auth Token</span><span class="presence">PRESENT AT HEAD</span></div>
+<div class="fields">
+<div><div class="k">File path</div><div class="v mono">.npmrc</div></div>
+<div><div class="k">Commit hash</div><div class="v mono">ed6879c</div></div>
+<div><div class="k">Line number</div><div class="v">1</div></div>
+<div><div class="k">Redacted preview</div><div class="v"><span class="preview">npm_****************rO5F</span></div></div>
+<div><div class="k">Verification status</div><div class="v">NOT CHECKED</div></div>
+</div>
+<details><summary>Details</summary>
+<div class="fields" style="margin-top:10px"><div><div class="k">Rule</div><div class="v mono">npmrc-auth-token</div></div><div><div class="k">Detector</div><div class="v">credential-file</div></div><div><div class="k">Entropy</div><div class="v">4.71 bits/char</div></div><div><div class="k">First seen commit</div><div class="v mono">ed6879cbdf854f01fe22001352ef29476873d450</div></div><div><div class="k">Other commits containing it</div><div class="v">0</div></div><div><div class="k">Author</div><div class="v">Fixture Bot &lt;fixture-bot@example.test&gt;</div></div><div><div class="k">Date</div><div class="v">2025-01-06T11:00:00Z</div></div><div><div class="k">Blob</div><div class="v mono">24fb02988c9816f5fd702c17b72f6f0a182b6a88</div></div><div><div class="k">Fingerprint</div><div class="v mono">d9f8a9bc7379ed261af42bec03884ea8</div></div></div>
+<div class="k" style="margin-top:12px">Commit message</div><pre>Add local environment files</pre>
+<div class="k" style="margin-top:12px">Context (redacted)</div><pre>//registry.npmjs.org/:_authToken=npm_****************rO5F</pre>
+</details>
+</article>
+<article class="card sev-high" data-severity="high" data-presence="in-HEAD" data-order="3" data-time="1736161200000">
+<div class="card-head"><span class="badge">HIGH</span><span class="type">Secret in Credentials File</span><span class="presence">PRESENT AT HEAD</span></div>
+<div class="fields">
+<div><div class="k">File path</div><div class="v mono">config/credentials.json</div></div>
+<div><div class="k">Commit hash</div><div class="v mono">ed6879c</div></div>
+<div><div class="k">Line number</div><div class="v">3</div></div>
+<div><div class="k">Redacted preview</div><div class="v"><span class="preview">Zqqs****************BzZk</span></div></div>
+<div><div class="k">Verification status</div><div class="v">NOT CHECKED</div></div>
+</div>
+<details><summary>Details</summary>
+<div class="fields" style="margin-top:10px"><div><div class="k">Rule</div><div class="v mono">credentials-json-secret</div></div><div><div class="k">Detector</div><div class="v">credential-file</div></div><div><div class="k">Entropy</div><div class="v">4.73 bits/char</div></div><div><div class="k">First seen commit</div><div class="v mono">ed6879cbdf854f01fe22001352ef29476873d450</div></div><div><div class="k">Other commits containing it</div><div class="v">0</div></div><div><div class="k">Author</div><div class="v">Fixture Bot &lt;fixture-bot@example.test&gt;</div></div><div><div class="k">Date</div><div class="v">2025-01-06T11:00:00Z</div></div><div><div class="k">Blob</div><div class="v mono">12858e7353064a2ce4dc1d8d01d7deb50b5a74be</div></div><div><div class="k">Fingerprint</div><div class="v mono">707c670c95d993fb80a78da4c7779e9f</div></div></div>
+<div class="k" style="margin-top:12px">Commit message</div><pre>Add local environment files</pre>
+<div class="k" style="margin-top:12px">Context (redacted)</div><pre>  &quot;client_secret&quot;: &quot;Zqqs****************BzZk&quot;</pre>
+</details>
+</article>
+<article class="card sev-high" data-severity="high" data-presence="in-HEAD" data-order="4" data-time="1736157600000">
+<div class="card-head"><span class="badge">HIGH</span><span class="type">GitLab CI Literal Secret</span><span class="presence">PRESENT AT HEAD</span></div>
+<div class="fields">
+<div><div class="k">File path</div><div class="v mono">.gitlab-ci.yml</div></div>
+<div><div class="k">Commit hash</div><div class="v mono">b87205d</div></div>
+<div><div class="k">Line number</div><div class="v">2</div></div>
+<div><div class="k">Redacted preview</div><div class="v"><span class="preview">EMFs****************oIwY</span></div></div>
+<div><div class="k">Verification status</div><div class="v">NOT CHECKED</div></div>
+</div>
+<details><summary>Details</summary>
+<div class="fields" style="margin-top:10px"><div><div class="k">Rule</div><div class="v mono">gitlab-ci-literal</div></div><div><div class="k">Detector</div><div class="v">ci</div></div><div><div class="k">Entropy</div><div class="v">4.52 bits/char</div></div><div><div class="k">First seen commit</div><div class="v mono">b87205da5057393f6dc9103074efa23e5c1e15d7</div></div><div><div class="k">Other commits containing it</div><div class="v">0</div></div><div><div class="k">Author</div><div class="v">Fixture Bot &lt;fixture-bot@example.test&gt;</div></div><div><div class="k">Date</div><div class="v">2025-01-06T10:00:00Z</div></div><div><div class="k">Blob</div><div class="v mono">1224675ffd7fea840db4db766ab28cf3bc572728</div></div><div><div class="k">Fingerprint</div><div class="v mono">dcebf512787d0f4dd3208177e3fc2be4</div></div></div>
+<div class="k" style="margin-top:12px">Commit message</div><pre>Add GitLab CI and Dockerfile</pre>
+<div class="k" style="margin-top:12px">Context (redacted)</div><pre>  REGISTRY_PASSWORD: &quot;EMFs****************oIwY&quot;</pre>
+</details>
+</article>
+<article class="card sev-high" data-severity="high" data-presence="in-HEAD" data-order="5" data-time="1736157600000">
+<div class="card-head"><span class="badge">HIGH</span><span class="type">GitLab CI Literal Secret</span><span class="presence">PRESENT AT HEAD</span></div>
+<div class="fields">
+<div><div class="k">File path</div><div class="v mono">.gitlab-ci.yml</div></div>
+<div><div class="k">Commit hash</div><div class="v mono">b87205d</div></div>
+<div><div class="k">Line number</div><div class="v">9</div></div>
+<div><div class="k">Redacted preview</div><div class="v"><span class="preview">a8DD****************dLdP</span></div></div>
+<div><div class="k">Verification status</div><div class="v">NOT CHECKED</div></div>
+</div>
+<details><summary>Details</summary>
+<div class="fields" style="margin-top:10px"><div><div class="k">Rule</div><div class="v mono">gitlab-ci-literal</div></div><div><div class="k">Detector</div><div class="v">ci</div></div><div><div class="k">Entropy</div><div class="v">4.63 bits/char</div></div><div><div class="k">First seen commit</div><div class="v mono">b87205da5057393f6dc9103074efa23e5c1e15d7</div></div><div><div class="k">Other commits containing it</div><div class="v">0</div></div><div><div class="k">Author</div><div class="v">Fixture Bot &lt;fixture-bot@example.test&gt;</div></div><div><div class="k">Date</div><div class="v">2025-01-06T10:00:00Z</div></div><div><div class="k">Blob</div><div class="v mono">1224675ffd7fea840db4db766ab28cf3bc572728</div></div><div><div class="k">Fingerprint</div><div class="v mono">6b90663695eaa3f8383c1e437bedf6a5</div></div></div>
+<div class="k" style="margin-top:12px">Commit message</div><pre>Add GitLab CI and Dockerfile</pre>
+<div class="k" style="margin-top:12px">Context (redacted)</div><pre>    SONAR_TOKEN: a8DD****************dLdP</pre>
+</details>
+</article>
+<article class="card sev-high" data-severity="high" data-presence="in-HEAD" data-order="6" data-time="1736157600000">
+<div class="card-head"><span class="badge">HIGH</span><span class="type">Dockerfile ENV/ARG Secret</span><span class="presence">PRESENT AT HEAD</span></div>
+<div class="fields">
+<div><div class="k">File path</div><div class="v mono">Dockerfile</div></div>
+<div><div class="k">Commit hash</div><div class="v mono">b87205d</div></div>
+<div><div class="k">Line number</div><div class="v">2</div></div>
+<div><div class="k">Redacted preview</div><div class="v"><span class="preview">8NOM****************ptkr</span></div></div>
+<div><div class="k">Verification status</div><div class="v">NOT CHECKED</div></div>
+</div>
+<details><summary>Details</summary>
+<div class="fields" style="margin-top:10px"><div><div class="k">Rule</div><div class="v mono">dockerfile-literal</div></div><div><div class="k">Detector</div><div class="v">ci</div></div><div><div class="k">Entropy</div><div class="v">4.48 bits/char</div></div><div><div class="k">First seen commit</div><div class="v mono">b87205da5057393f6dc9103074efa23e5c1e15d7</div></div><div><div class="k">Other commits containing it</div><div class="v">0</div></div><div><div class="k">Author</div><div class="v">Fixture Bot &lt;fixture-bot@example.test&gt;</div></div><div><div class="k">Date</div><div class="v">2025-01-06T10:00:00Z</div></div><div><div class="k">Blob</div><div class="v mono">2b36c5f7cdaaf6a47f712f159ef7dd43970173bf</div></div><div><div class="k">Fingerprint</div><div class="v mono">6c167fd5b6418c7b32bb3764f4d32020</div></div></div>
+<div class="k" style="margin-top:12px">Commit message</div><pre>Add GitLab CI and Dockerfile</pre>
+<div class="k" style="margin-top:12px">Context (redacted)</div><pre>ARG NPM_TOKEN=8NOM****************ptkr</pre>
+</details>
+</article>
+<article class="card sev-high" data-severity="high" data-presence="in-HEAD" data-order="7" data-time="1736157600000">
+<div class="card-head"><span class="badge">HIGH</span><span class="type">Dockerfile ENV/ARG Secret</span><span class="presence">PRESENT AT HEAD</span></div>
+<div class="fields">
+<div><div class="k">File path</div><div class="v mono">Dockerfile</div></div>
+<div><div class="k">Commit hash</div><div class="v mono">b87205d</div></div>
+<div><div class="k">Line number</div><div class="v">4</div></div>
+<div><div class="k">Redacted preview</div><div class="v"><span class="preview">izhT****************4sN5</span></div></div>
+<div><div class="k">Verification status</div><div class="v">NOT CHECKED</div></div>
+</div>
+<details><summary>Details</summary>
+<div class="fields" style="margin-top:10px"><div><div class="k">Rule</div><div class="v mono">dockerfile-literal</div></div><div><div class="k">Detector</div><div class="v">ci</div></div><div><div class="k">Entropy</div><div class="v">4.63 bits/char</div></div><div><div class="k">First seen commit</div><div class="v mono">b87205da5057393f6dc9103074efa23e5c1e15d7</div></div><div><div class="k">Other commits containing it</div><div class="v">0</div></div><div><div class="k">Author</div><div class="v">Fixture Bot &lt;fixture-bot@example.test&gt;</div></div><div><div class="k">Date</div><div class="v">2025-01-06T10:00:00Z</div></div><div><div class="k">Blob</div><div class="v mono">2b36c5f7cdaaf6a47f712f159ef7dd43970173bf</div></div><div><div class="k">Fingerprint</div><div class="v mono">229f58a7bddc5bb12c249edcf65f55be</div></div></div>
+<div class="k" style="margin-top:12px">Commit message</div><pre>Add GitLab CI and Dockerfile</pre>
+<div class="k" style="margin-top:12px">Context (redacted)</div><pre>    API_SECRET=izhT****************4sN5</pre>
+</details>
+</article>
+<article class="card sev-high" data-severity="high" data-presence="in-HEAD" data-order="8" data-time="1736157600000">
+<div class="card-head"><span class="badge">HIGH</span><span class="type">Dockerfile ENV/ARG Secret</span><span class="presence">PRESENT AT HEAD</span></div>
+<div class="fields">
+<div><div class="k">File path</div><div class="v mono">Dockerfile</div></div>
+<div><div class="k">Commit hash</div><div class="v mono">b87205d</div></div>
+<div><div class="k">Line number</div><div class="v">5</div></div>
+<div><div class="k">Redacted preview</div><div class="v"><span class="preview">xZmP****************xYBL</span></div></div>
+<div><div class="k">Verification status</div><div class="v">NOT CHECKED</div></div>
+</div>
+<details><summary>Details</summary>
+<div class="fields" style="margin-top:10px"><div><div class="k">Rule</div><div class="v mono">dockerfile-literal</div></div><div><div class="k">Detector</div><div class="v">ci</div></div><div><div class="k">Entropy</div><div class="v">3.94 bits/char</div></div><div><div class="k">First seen commit</div><div class="v mono">b87205da5057393f6dc9103074efa23e5c1e15d7</div></div><div><div class="k">Other commits containing it</div><div class="v">0</div></div><div><div class="k">Author</div><div class="v">Fixture Bot &lt;fixture-bot@example.test&gt;</div></div><div><div class="k">Date</div><div class="v">2025-01-06T10:00:00Z</div></div><div><div class="k">Blob</div><div class="v mono">2b36c5f7cdaaf6a47f712f159ef7dd43970173bf</div></div><div><div class="k">Fingerprint</div><div class="v mono">fec8e4afb485eef99ccd2626624e797b</div></div></div>
+<div class="k" style="margin-top:12px">Commit message</div><pre>Add GitLab CI and Dockerfile</pre>
+<div class="k" style="margin-top:12px">Context (redacted)</div><pre>ENV SERVICE_PASSWORD xZmP****************xYBL</pre>
+</details>
+</article>
+<article class="card sev-high" data-severity="high" data-presence="history-only" data-order="9" data-time="1736154000000">
+<div class="card-head"><span class="badge">HIGH</span><span class="type">GitHub Actions Literal Secret</span><span class="presence hist">HISTORY-ONLY · deleted but still recoverable</span></div>
+<div class="fields">
+<div><div class="k">File path</div><div class="v mono">.github/workflows/deploy.yml</div></div>
+<div><div class="k">Commit hash</div><div class="v mono">ced1a10</div></div>
+<div><div class="k">Line number</div><div class="v">4</div></div>
+<div><div class="k">Redacted preview</div><div class="v"><span class="preview">LCS3****************dWF0</span></div></div>
+<div><div class="k">Verification status</div><div class="v">NOT CHECKED</div></div>
+</div>
+<details><summary>Details</summary>
+<div class="fields" style="margin-top:10px"><div><div class="k">Rule</div><div class="v mono">github-actions-literal</div></div><div><div class="k">Detector</div><div class="v">ci</div></div><div><div class="k">Entropy</div><div class="v">4.63 bits/char</div></div><div><div class="k">First seen commit</div><div class="v mono">ced1a10670d20e369ef4a4f8e5aa662781b9b2cc</div></div><div><div class="k">Other commits containing it</div><div class="v">0</div></div><div><div class="k">Author</div><div class="v">Fixture Bot &lt;fixture-bot@example.test&gt;</div></div><div><div class="k">Date</div><div class="v">2025-01-06T09:00:00Z</div></div><div><div class="k">Blob</div><div class="v mono">240e2e2466032dbbd0910be5cb0fbe0fa5ff6496</div></div><div><div class="k">Fingerprint</div><div class="v mono">95c998c2573389e6a2b4c02d35aab6a3</div></div></div>
+<div class="k" style="margin-top:12px">Commit message</div><pre>Add deploy workflow</pre>
+<div class="k" style="margin-top:12px">Context (redacted)</div><pre>  DEPLOY_API_KEY: LCS3****************dWF0</pre>
+</details>
+</article>
+<article class="card sev-high" data-severity="high" data-presence="in-HEAD" data-order="10" data-time="1736154000000">
+<div class="card-head"><span class="badge">HIGH</span><span class="type">GitHub Actions Literal Secret</span><span class="presence">PRESENT AT HEAD</span></div>
+<div class="fields">
+<div><div class="k">File path</div><div class="v mono">.github/workflows/deploy.yml</div></div>
+<div><div class="k">Commit hash</div><div class="v mono">ced1a10</div></div>
+<div><div class="k">Line number</div><div class="v">9</div></div>
+<div><div class="k">Redacted preview</div><div class="v"><span class="preview">dzEp****************9iB7</span></div></div>
+<div><div class="k">Verification status</div><div class="v">NOT CHECKED</div></div>
+</div>
+<details><summary>Details</summary>
+<div class="fields" style="margin-top:10px"><div><div class="k">Rule</div><div class="v mono">github-actions-literal</div></div><div><div class="k">Detector</div><div class="v">ci</div></div><div><div class="k">Entropy</div><div class="v">4.17 bits/char</div></div><div><div class="k">First seen commit</div><div class="v mono">ced1a10670d20e369ef4a4f8e5aa662781b9b2cc</div></div><div><div class="k">Other commits containing it</div><div class="v">1</div></div><div><div class="k">Author</div><div class="v">Fixture Bot &lt;fixture-bot@example.test&gt;</div></div><div><div class="k">Date</div><div class="v">2025-01-06T09:00:00Z</div></div><div><div class="k">Blob</div><div class="v mono">240e2e2466032dbbd0910be5cb0fbe0fa5ff6496</div></div><div><div class="k">Fingerprint</div><div class="v mono">65b48b81eae1b21448b24aa3ffac6248</div></div></div>
+<div class="k" style="margin-top:12px">Commit message</div><pre>Add deploy workflow</pre>
+<div class="k" style="margin-top:12px">Context (redacted)</div><pre>      DATABASE_PASSWORD: &quot;dzEp****************9iB7&quot;</pre>
+</details>
+</article>
+<article class="card sev-high" data-severity="high" data-presence="in-HEAD" data-order="11" data-time="1736154000000">
+<div class="card-head"><span class="badge">HIGH</span><span class="type">GitHub Actions Literal Secret</span><span class="presence">PRESENT AT HEAD</span></div>
+<div class="fields">
+<div><div class="k">File path</div><div class="v mono">.github/workflows/deploy.yml</div></div>
+<div><div class="k">Commit hash</div><div class="v mono">ced1a10</div></div>
+<div><div class="k">Line number</div><div class="v">15</div></div>
+<div><div class="k">Redacted preview</div><div class="v"><span class="preview">Gr9Y****************vLWH</span></div></div>
+<div><div class="k">Verification status</div><div class="v">NOT CHECKED</div></div>
+</div>
+<details><summary>Details</summary>
+<div class="fields" style="margin-top:10px"><div><div class="k">Rule</div><div class="v mono">github-actions-literal</div></div><div><div class="k">Detector</div><div class="v">ci</div></div><div><div class="k">Entropy</div><div class="v">4.50 bits/char</div></div><div><div class="k">First seen commit</div><div class="v mono">ced1a10670d20e369ef4a4f8e5aa662781b9b2cc</div></div><div><div class="k">Other commits containing it</div><div class="v">1</div></div><div><div class="k">Author</div><div class="v">Fixture Bot &lt;fixture-bot@example.test&gt;</div></div><div><div class="k">Date</div><div class="v">2025-01-06T09:00:00Z</div></div><div><div class="k">Blob</div><div class="v mono">240e2e2466032dbbd0910be5cb0fbe0fa5ff6496</div></div><div><div class="k">Fingerprint</div><div class="v mono">fe76382328bad26e720268d7081c6d43</div></div></div>
+<div class="k" style="margin-top:12px">Commit message</div><pre>Add deploy workflow</pre>
+<div class="k" style="margin-top:12px">Context (redacted)</div><pre>          api_token: Gr9Y****************vLWH</pre>
+</details>
+</article>
+</section>
+<p class="warn">Secrets are redacted. A history-only secret is still recoverable from Git history until the history is rewritten — rotate the credential, do not just delete it. Report genuinely live findings privately to the repository owner.</p>
+<footer>Generated by git-leak-hunter 0.1.0 · config b26f2e407f9c5064 · schema 1.0</footer>
+</main>
+<script>
+(function(){
+  var sev='all', pres='all';
+  var cards=[].slice.call(document.querySelectorAll('.card'));
+  var list=document.getElementById('findings');
+  function apply(){
+    var shown=0;
+    cards.forEach(function(c){
+      var ok=(sev==='all'||c.getAttribute('data-severity')===sev)&&(pres==='all'||c.getAttribute('data-presence')===pres);
+      c.hidden=!ok; if(ok)shown++;
+    });
+    document.getElementById('shown').textContent=String(shown);
+  }
+  document.querySelectorAll('[data-filter-sev]').forEach(function(b){
+    b.addEventListener('click',function(){
+      sev=b.getAttribute('data-filter-sev');
+      document.querySelectorAll('[data-filter-sev]').forEach(function(x){x.setAttribute('aria-pressed',String(x===b));});
+      apply();
+    });
+  });
+  var p=document.getElementById('presence');
+  if(p)p.addEventListener('change',function(){pres=p.value;apply();});
+  var s=document.getElementById('sort');
+  if(s)s.addEventListener('change',function(){
+    var key=s.value;
+    cards.sort(function(a,b){
+      if(key==='recent')return Number(b.getAttribute('data-time'))-Number(a.getAttribute('data-time'));
+      return Number(a.getAttribute('data-order'))-Number(b.getAttribute('data-order'));
+    });
+    cards.forEach(function(c){list.appendChild(c);});
+  });
+})();
+</script>
+</body>
+</html>

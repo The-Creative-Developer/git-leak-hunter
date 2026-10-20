@@ -6,3 +6,4 @@ leak-report/
 bench/results/tmp/
 *.tgz
 .DS_Store
+demo-repos/

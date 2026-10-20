@@ -33,18 +33,19 @@ fails validation.
 
 ## Commands
 
-| Task                                   | Command                                 |
-| -------------------------------------- | --------------------------------------- |
-| Install (lockfile, no install scripts) | `npm ci`                                |
-| Typecheck                              | `npm run typecheck`                     |
-| Lint / format check                    | `npm run lint` / `npm run format:check` |
-| Tests                                  | `npm test`                              |
-| Coverage                               | `npm run coverage`                      |
-| Build                                  | `npm run build`                         |
-| Run CLI from source                    | `npm run dev -- scan <path>`            |
-| Build fixture repos to a dir           | `npm run fixtures -- <outDir>`          |
-| Entropy calibration table              | `npx tsx bench/entropy-calibration.ts`  |
-| Audit                                  | `npm audit`                             |
+| Task                                   | Command                                                   |
+| -------------------------------------- | --------------------------------------------------------- |
+| Install (lockfile, no install scripts) | `npm ci`                                                  |
+| Typecheck                              | `npm run typecheck`                                       |
+| Lint / format check                    | `npm run lint` / `npm run format:check`                   |
+| Tests                                  | `npm test`                                                |
+| Coverage                               | `npm run coverage`                                        |
+| Build                                  | `npm run build`                                           |
+| Run CLI from source                    | `npm run dev -- scan <path>`                              |
+| Build fixture repos to a dir           | `npm run fixtures -- <outDir>`                            |
+| Entropy calibration table              | `npx tsx bench/entropy-calibration.ts`                    |
+| Benchmarks → docs/BENCHMARK.md         | `npm run bench` (commit first: results record the commit) |
+| Audit                                  | `npm audit`                                               |
 
 Requirements: runtime Node ≥ 20; development tooling (Vitest 5, ESLint 10) needs Node ≥ 22.12.
 Dependencies are pinned exactly (`save-exact`), install scripts are disabled (`ignore-scripts`), and
