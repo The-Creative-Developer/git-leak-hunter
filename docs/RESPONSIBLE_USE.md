@@ -32,7 +32,8 @@ people's secrets.
 | Raw secrets never persisted           | `Finding` has no raw-secret field; raw values exist only inside one function call or, with `--verify`, in an in-memory vault cleared right after verification                                                     | `src/detect/engine.ts`, `src/verify/vault.ts`          |
 | Redacted by default                   | First 4 + 16 stars + last 4 (≤ 2 chars for short values); context lines and commit messages are masked as well                                                                                                    | `src/report/redact.ts`, `src/report/sanitize.ts`       |
 | Leak-free outputs                     | Tests assert that no planted secret appears in HTML, JSON, stdout or stderr, and test helpers never print the secret they search for                                                                              | `test/integration/*.test.ts`, `test/helpers/noLeak.ts` |
-| No telemetry                          | The only network access is `git clone` of a URL you supply, plus the opt-in verification calls                                                                                                                    | `src/git/repo.ts`, `src/verify/http.ts`                |
+| `dork` stays inside your own account  | Before any search, the token's account must be the owner (or an active admin of the org); every query is scoped to exactly that owner; results from other owners are dropped; requires `--confirm-authorized`     | `src/dork/`                                            |
+| No telemetry                          | The only network access is `git clone` of a URL you supply, the opt-in verification calls, and `dork` (when you run it)                                                                                           | `src/git/repo.ts`, `src/verify/http.ts`                |
 
 ## If you find a live credential
 

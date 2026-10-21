@@ -46,6 +46,8 @@ recoverable): the case this tool exists for.
   - Single-file HTML with a strict CSP and no external resources; every value is escaped.
   - JSON is validated against [schema/report.schema.json](schema/report.schema.json).
   - No full secret appears in any output; the test suite enforces this.
+- **Optional GitHub dorking** (`dork --owner <you>`). Searches the GitHub code-search API, only
+  within an owner the token's account controls, and reports through the same redacted pipeline.
 - **Untrusted-input hardening.** No hooks, fsmonitor, pager or `ext::` transports; `-z` parsing;
   ReDoS-tested detectors; size cap; binary skip. Details in
   [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#hardening-untrusted-input).
@@ -109,6 +111,29 @@ $ git-leak-hunter scan history-only
 
 A sample report generated from the `ci-configs` fixture (fabricated secrets only) is in
 [examples/report.html](examples/report.html) and [examples/report.json](examples/report.json).
+
+### Optional: GitHub dorking (owners you control only)
+
+```bash
+GITHUB_TOKEN=<your token> git-leak-hunter dork --owner <your-login> --confirm-authorized
+```
+
+`dork` runs built-in code-search terms (`AKIA`, `ghp_`, `sk_live_`, `filename:.env`,
+`filename:id_rsa`, …) through the GitHub code-search API. It fetches matching files by blob SHA
+and scans them with the same detection engine, writing the same redacted HTML/JSON report.
+Guardrails:
+
+- **Ownership check before any search.** The token's account must be the owner itself, or an
+  active **admin** of the org (`--org`, needs `read:org`).
+- **Strict query scope.** Every query carries exactly one `user:<owner>`/`org:<owner>`
+  qualifier, added by the tool. Queries with any other scope qualifier or `OR` are refused.
+- **Network limits.** Only `api.github.com` is contacted (https, no redirects). Requests are
+  paced to the 10-per-minute code-search budget and stop at the first rate limit.
+- **Default branches only.** GitHub code search indexes default branches only, so use
+  `scan <repo-url>` for full history.
+
+`--term <t…>` replaces the built-in terms, `--max-results <n>` caps the files fetched (default
+100), and `--org` marks the owner as an organization.
 
 ### Configuration and ignores
 
@@ -192,6 +217,7 @@ src/
   ci/       Stage 3a: githubActions, gitlabCi, dockerfile, credentialFiles
   verify/   Stage 3b: vault, http (allowlist), sigv4, aws, github, index
   report/   Stage 4: redact, sanitize, json, html
+  dork/     optional: queries (scope guard), github (API client), index (pipeline)
 schema/report.schema.json   test/   bench/   docs/   examples/
 ```
 

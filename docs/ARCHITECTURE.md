@@ -1,7 +1,6 @@
 # Architecture
 
-> Status: Phases 1–3 implemented: Git engine, detection, CI/CD parsing, reports, hardening, and
-> opt-in verification. GitHub dorking (optional stretch) is not implemented.
+> Status: Phases 1–4 implemented, plus the optional GitHub dorking stretch (`dork`).
 
 Git Leak Hunter scans the **entire reachable history** of a Git repository, not just the working
 tree, because a secret deleted in a later commit stays recoverable until history is rewritten.
@@ -175,6 +174,38 @@ request is made at all without `--verify`.
 | Credentials in clone URLs                                                                    | stripped from notices, errors and the report                                                                                                         | `remote.test.ts`                                          |
 | Large histories                                                                              | streaming log parser, one `cat-file` process, per-blob memoization                                                                                   | `scale.test.ts` (2,000 commits)                           |
 
+## Optional: GitHub dorking (`src/dork/`)
+
+`git-leak-hunter dork --owner <name> --confirm-authorized` uses the GitHub code-search API with a
+token from `GITHUB_TOKEN`/`GH_TOKEN`.
+
+1. **Ownership gate** (`github.ts`, before any search):
+   - user: `GET /user` must return the same login;
+   - org: `GET /user/memberships/orgs/{org}` must say `active` + `admin`.
+2. **Scoped queries** (`queries.ts`). `buildQuery` appends the owner qualifier itself, and
+   `assertScopedQuery` refuses anything that is not scoped to exactly one owner: no qualifier,
+   two qualifiers, a different owner, `repo:`, `-user:`, or `OR`. All queries are built before
+   the first request, so a bad term aborts the run before anything is searched.
+3. **Fetch and scan.** Results outside the owner are dropped (defence in depth). Each matching
+   file is fetched once by blob SHA (`GET /repos/{r}/git/blobs/{sha}`) and run through `scanBlob`
+   with its file kind. For files with matches, the latest commit touching the path
+   (`GET /repos/{r}/commits?path=…&per_page=1`) supplies `commitHash`, author and date.
+4. **Report.** `analyze()` and the normal report writers produce the same redacted `Finding`
+   schema. `filePath` is `<owner>/<repo>/<path>`; `presence` is `in-HEAD`, since code search
+   indexes default branches only.
+5. **Network.** The same `guardedFetch` as verification: `api.github.com` only, https, no
+   redirects, 10 s timeout. Code-search requests are paced at 6.5 s (10/minute), other calls at
+   250 ms. The first rate-limit response stops the run and marks the result `incomplete`; there
+   are no retries. The token is sent only in the Authorization header and never printed.
+
+Tests (`test/integration/dork.test.ts`) use a fake GitHub API that fails on any other host. They
+cover:
+
+- scope refusal and ownership refusal (user mismatch, org member, non-member);
+- out-of-owner results being dropped before any fetch;
+- deduplication, pacing, and stopping at the rate limit;
+- schema validity, leak-free outputs, and that the token is never printed.
+
 ## Known limitations
 
 - Blobs or trees reachable **only** through a ref or tag that points directly at a blob or tree,
@@ -184,6 +215,8 @@ request is made at all without `--verify`.
   recognisable format fail the entropy check (`docs/RULES.md`, measured).
 - `presence` is relative to HEAD (or the `--branch` tip). A secret that lives only on another
   branch is reported as `history-only`.
+- `dork` sees only what GitHub code search indexes: default branches, files under GitHub's size
+  limit, non-fork repositories. Its findings are leads; confirm them with `scan <repo-url>`.
 - Live verification covers AWS (long-term `AKIA` keys with a paired secret) and GitHub tokens
   only.
 

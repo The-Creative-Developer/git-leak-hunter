@@ -65,6 +65,7 @@ src/
   ci/               Stage 3a: githubActions, gitlabCi, dockerfile, credentialFiles
   verify/           Stage 3b: aws, github, index (allowlist + guardrails)
   report/           Stage 4: redact, json, html
+  dork/             optional: owner-scoped GitHub code search → same Finding pipeline
 schema/report.schema.json
 test/  fixtures/ (repo builder + ground truth), unit/, integration/, helpers/
 bench/  docs/  examples/

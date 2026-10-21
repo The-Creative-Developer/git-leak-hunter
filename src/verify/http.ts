@@ -1,5 +1,5 @@
 /**
- * The only network path in the tool besides `git clone`. Hard allowlist of exact hosts, https
+ * The only network path in the tool besides `git clone` (used by `--verify` and `dork`). Hard allowlist of exact hosts, https
  * only, no redirects (a redirect could point anywhere), 10 s timeout, no retries.
  */
 export const VERIFY_HOST_ALLOWLIST: ReadonlySet<string> = new Set([
@@ -12,7 +12,7 @@ export type FetchLike = (input: string, init: RequestInit) => Promise<Response>;
 
 export class HostNotAllowedError extends Error {
   constructor(host: string) {
-    super(`verification refused: host "${host}" is not on the allowlist`);
+    super(`network request refused: host "${host}" is not on the allowlist`);
     this.name = 'HostNotAllowedError';
   }
 }

@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { Command, InvalidArgumentError, Option } from 'commander';
 import pc from 'picocolors';
 import { loadConfig } from './config.js';
+import { runDork } from './dork/index.js';
 import { runScan, type ScanResult } from './pipeline.js';
 import { SEVERITIES, SEVERITY_RANK, type ScanOptions, type Severity } from './types.js';
 import { VERSION } from './version.js';
@@ -196,6 +197,64 @@ async function scanAction(target: string, opts: ScanCliOptions, io: Io): Promise
   return EXIT_CLEAN;
 }
 
+interface DorkCliOptions {
+  owner: string;
+  org?: boolean;
+  term?: string[];
+  maxResults: number;
+  out: string;
+  format: Array<'html' | 'json'>;
+  config?: string;
+  failOn?: Severity;
+  confirmAuthorized?: boolean;
+  quiet?: boolean;
+}
+
+async function dorkAction(opts: DorkCliOptions, io: Io): Promise<number> {
+  if (!opts.confirmAuthorized) {
+    io.err(
+      'error: dork requires --confirm-authorized (only search an owner you control: yourself or an org you administer)\n',
+    );
+    return EXIT_ERROR;
+  }
+  const token = process.env.GITHUB_TOKEN ?? process.env.GH_TOKEN;
+  if (!token) {
+    io.err('error: set GITHUB_TOKEN (or GH_TOKEN) to a token for the owner you control\n');
+    return EXIT_ERROR;
+  }
+  const cfg = await loadConfig(opts.config);
+  const ok = pc.green('✓');
+  const result = await runDork(
+    {
+      owner: opts.owner,
+      ownerType: opts.org ? 'org' : 'user',
+      ...(opts.term ? { terms: opts.term } : {}),
+      maxResults: opts.maxResults,
+      outDir: opts.out,
+      formats: [...new Set(opts.format)],
+      entropy: cfg.entropy,
+      maxFileBytes: cfg.maxFileBytes,
+      token,
+    },
+    { onProgress: (m) => (opts.quiet ? undefined : io.out(`${ok} ${m}\n`)) },
+  );
+  const r = result.report;
+  const bySev = SEVERITIES.map((sev) => `${r.summary.bySeverity[sev]} ${sev}`).join(', ');
+  io.out(
+    `${r.summary.total > 0 ? pc.yellow('!') : ok} ${r.summary.total} finding${r.summary.total === 1 ? '' : 's'} detected${r.summary.total ? pc.dim(`  (${bySev})`) : ''}\n`,
+  );
+  if (result.incomplete) io.err(pc.yellow(`! results incomplete: ${result.incomplete}\n`));
+  if (result.written.html)
+    io.out(`${ok} report.html generated${pc.dim(`  (${result.written.html})`)}\n`);
+  if (result.written.json)
+    io.out(`${ok} report.json generated${pc.dim(`  (${result.written.json})`)}\n`);
+  if (opts.failOn) {
+    const threshold = SEVERITY_RANK[opts.failOn];
+    if (r.findings.some((f) => SEVERITY_RANK[f.severity] >= threshold)) return EXIT_FINDINGS;
+  }
+  return EXIT_CLEAN;
+}
+
 export function buildProgram(
   io: Io = defaultIo,
   setExit: (code: number) => void = () => undefined,
@@ -240,6 +299,47 @@ export function buildProgram(
     .addHelpText('after', RESPONSIBLE_USE)
     .action(async (target: string, opts: ScanCliOptions) => {
       setExit(await scanAction(target, opts, io));
+    });
+
+  program
+    .command('dork')
+    .description(
+      'Optional: search GitHub code (default branches) for candidate leaks within an owner YOU control',
+    )
+    .requiredOption(
+      '--owner <name>',
+      'GitHub user or org to search (must be you, or an org you administer)',
+    )
+    .option(
+      '--org',
+      'the owner is an organization (requires admin membership; token needs read:org)',
+    )
+    .option('--term <term...>', 'replace the built-in search terms (owner scope is always added)')
+    .option('--max-results <n>', 'maximum files to fetch and scan', parsePositiveInt, 100)
+    .option('--out <dir>', 'output directory', './leak-report')
+    .option('--format <list>', 'comma-separated output formats: html,json', parseFormats, [
+      'html',
+      'json',
+    ])
+    .option('--config <file>', 'JSON config file (entropy thresholds, max file size)')
+    .addOption(
+      new Option(
+        '--fail-on <severity>',
+        'exit 1 if any finding is at or above this severity',
+      ).choices([...SEVERITIES]),
+    )
+    .option('--confirm-authorized', 'acknowledge you control this owner and may search it')
+    .option('--quiet', 'only print errors and the final summary')
+    .addHelpText(
+      'after',
+      `
+Token: read from GITHUB_TOKEN (or GH_TOKEN); it is never printed.
+Every query is scoped to exactly user:<owner> or org:<owner>; unscoped queries are refused.
+GitHub code search indexes default branches only — use \`scan <repo-url>\` for full history.
+${RESPONSIBLE_USE}`,
+    )
+    .action(async (opts: DorkCliOptions) => {
+      setExit(await dorkAction(opts, io));
     });
 
   return program;
