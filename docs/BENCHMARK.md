@@ -7,19 +7,19 @@
 
 Command: `npx tsx bench/accuracy.ts` → `bench/results/accuracy.json`
 
-- Ran at: 2026-10-20T17:26:58.626Z
+- Ran at: 2026-10-21T05:07:45.202Z
 - Machine: Darwin 27.0.0 arm64, Apple M1 (8 cores), 8 GiB RAM
-- Node v24.21.0; git version 2.54.0 (Apple Git-157); git-leak-hunter commit `e4f3de8`
+- Node v24.21.0; git version 2.54.0 (Apple Git-157); git-leak-hunter commit `70f78a1`
 
 Corpus: the eight fixture repositories built by `test/fixtures/buildRepos.ts` (seed 1337). They contain 32 planted fabricated secrets and the false-positive bait listed in `ground-truth.json`. Each tool ran once per repository with its **default rules**, in a non-network mode, without live verification.
 
 Matching: A tool finding is a true positive when its (repo, file path, line) equals a planted secret in ground-truth.json; several reports of the same planted secret count once. Each distinct unmatched (repo, path, line) is one false positive. Planted secrets never matched are false negatives.
 
-| Tool            | Version                | Planted                 | TP  | FP  | FN  | Precision | Recall | Raw reports |
-| --------------- | ---------------------- | ----------------------- | --- | --- | --- | --------- | ------ | ----------- |
-| git-leak-hunter | 0.1.0 (commit e4f3de8) | 32                      | 32  | 0   | 0   | 100.0%    | 100.0% | 32          |
-| gitleaks        | 8.30.1                 | 32                      | 28  | 0   | 4   | 100.0%    | 87.5%  | 29          |
-| trufflehog      | —                      | not run (not installed) | —   | —   | —   | —         | —      | —           |
+| Tool            | Version                | Planted | TP  | FP  | FN  | Precision | Recall | Raw reports |
+| --------------- | ---------------------- | ------- | --- | --- | --- | --------- | ------ | ----------- |
+| git-leak-hunter | 0.1.0 (commit 70f78a1) | 32      | 32  | 0   | 0   | 100.0%    | 100.0% | 32          |
+| gitleaks        | 8.30.1                 | 32      | 28  | 0   | 4   | 100.0%    | 87.5%  | 29          |
+| trufflehog      | trufflehog 3.99.3      | 32      | 14  | 0   | 18  | 100.0%    | 43.8%  | 15          |
 
 Exact commands (`<repo>` is each fixture directory):
 
@@ -29,16 +29,16 @@ Exact commands (`<repo>` is each fixture directory):
 
 ### Per repository (TP / FP / FN)
 
-| Repository        | git-leak-hunter | gitleaks   |
-| ----------------- | --------------- | ---------- |
-| `history-only`    | 3 / 0 / 0       | 3 / 0 / 0  |
-| `head-secrets`    | 7 / 0 / 0       | 7 / 0 / 0  |
-| `blob-reuse`      | 4 / 0 / 0       | 4 / 0 / 0  |
-| `merge-conflict`  | 2 / 0 / 0       | 0 / 0 / 2  |
-| `ci-configs`      | 12 / 0 / 0      | 10 / 0 / 2 |
-| `false-positives` | 0 / 0 / 0       | 0 / 0 / 0  |
-| `hostile`         | 4 / 0 / 0       | 4 / 0 / 0  |
-| `clean`           | 0 / 0 / 0       | 0 / 0 / 0  |
+| Repository        | git-leak-hunter | gitleaks   | trufflehog |
+| ----------------- | --------------- | ---------- | ---------- |
+| `history-only`    | 3 / 0 / 0       | 3 / 0 / 0  | 2 / 0 / 1  |
+| `head-secrets`    | 7 / 0 / 0       | 7 / 0 / 0  | 3 / 0 / 4  |
+| `blob-reuse`      | 4 / 0 / 0       | 4 / 0 / 0  | 4 / 0 / 0  |
+| `merge-conflict`  | 2 / 0 / 0       | 0 / 0 / 2  | 0 / 0 / 2  |
+| `ci-configs`      | 12 / 0 / 0      | 10 / 0 / 2 | 1 / 0 / 11 |
+| `false-positives` | 0 / 0 / 0       | 0 / 0 / 0  | 0 / 0 / 0  |
+| `hostile`         | 4 / 0 / 0       | 4 / 0 / 0  | 4 / 0 / 0  |
+| `clean`           | 0 / 0 / 0       | 0 / 0 / 0  | 0 / 0 / 0  |
 
 ### Misses and false positives, by tool
 
@@ -52,7 +52,10 @@ Exact commands (`<repo>` is each fixture directory):
 - False negatives: `merge-conflict`: resolution-token (github-token); `merge-conflict`: evil-merge-slack (slack-token); `ci-configs`: docker-arg (dockerfile-literal); `ci-configs`: docker-env-space (dockerfile-literal)
 - False positives: none
 
-Tools marked "not run" were not installed on the benchmark machine. Install them (`brew install trufflehog  (or see https://github.com/trufflesecurity/trufflehog#floppy_disk-installation)`) and re-run `npx tsx bench/accuracy.ts`, then `npx tsx bench/report.ts`. The TruffleHog adapter in `bench/accuracy.ts` parses TruffleHog v3 `--json` output. It has not been exercised on this machine.
+**trufflehog**
+
+- False negatives: `history-only`: aws-secret (aws-secret-access-key); `head-secrets`: stripe-test (stripe-test-key); `head-secrets`: deploy-key (private-key); `head-secrets`: generic-app (generic-high-entropy); `head-secrets`: generic-docs (generic-high-entropy); `merge-conflict`: resolution-token (github-token); `merge-conflict`: evil-merge-slack (slack-token); `ci-configs`: gha-workflow-env (ci-literal); `ci-configs`: gha-job-env (ci-literal); `ci-configs`: gha-with-input (ci-literal); `ci-configs`: gitlab-global (ci-literal); `ci-configs`: gitlab-job (ci-literal); `ci-configs`: docker-arg (dockerfile-literal); `ci-configs`: docker-env-continuation (dockerfile-literal); `ci-configs`: docker-env-space (dockerfile-literal); `ci-configs`: dotenv (credential-file); `ci-configs`: id-rsa (private-key); `ci-configs`: credentials-json (credential-file)
+- False positives: none
 
 ### Limitations of this comparison
 
@@ -61,6 +64,7 @@ Tools marked "not run" were not installed on the benchmark machine. Install them
 - **Location-based matching.** A tool that reports a secret on a different line than the one planted, e.g. a multi-line match anchored elsewhere, counts as a miss plus a false positive.
 - **Default configurations only.** No competitor was tuned. Custom rules would change their numbers.
 - **Category coverage differs by design.** Some planted categories (Dockerfile `ARG`/`ENV` literals, CI variables) are scanned structurally by Git Leak Hunter. Other tools may not target them by default.
+- **Fabricated keys are not structurally valid.** Planted private keys are random bytes in PEM armor, not parseable keys. Tools that validate key structure skip them by design, which counts as a miss here. A manual check on 2026-10-21 with TruffleHog 3.99.3 (`trufflehog git file://<tmp-repo> --json --no-verification --no-update`) on a throwaway repo committing one key freshly generated with `openssl genrsa 2048` (never used anywhere) and one fabricated key: TruffleHog reported the generated key and not the fabricated one. Its private-key misses below therefore reflect the fixtures, not a detection gap. Gitleaks and Git Leak Hunter match on the PEM header alone, so they report both.
 
 ## 2. Blob memoization: history scan with cache on vs `--no-cache`
 

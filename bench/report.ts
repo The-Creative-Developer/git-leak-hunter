@@ -119,6 +119,7 @@ async function main(): Promise<void> {
     '- **Location-based matching.** A tool that reports a secret on a different line than the one planted, e.g. a multi-line match anchored elsewhere, counts as a miss plus a false positive.',
     '- **Default configurations only.** No competitor was tuned. Custom rules would change their numbers.',
     '- **Category coverage differs by design.** Some planted categories (Dockerfile `ARG`/`ENV` literals, CI variables) are scanned structurally by Git Leak Hunter. Other tools may not target them by default.',
+    '- **Fabricated keys are not structurally valid.** Planted private keys are random bytes in PEM armor, not parseable keys. Tools that validate key structure skip them by design, which counts as a miss here. A manual check on 2026-10-21 with TruffleHog 3.99.3 (`trufflehog git file://<tmp-repo> --json --no-verification --no-update`) on a throwaway repo committing one key freshly generated with `openssl genrsa 2048` (never used anywhere) and one fabricated key: TruffleHog reported the generated key and not the fabricated one. Its private-key misses below therefore reflect the fixtures, not a detection gap. Gitleaks and Git Leak Hunter match on the PEM header alone, so they report both.',
     '',
   );
 

@@ -1,21 +1,21 @@
 {
-  "generatedAt": "2026-10-20T17:26:58.625Z",
+  "generatedAt": "2026-10-21T05:07:45.191Z",
   "env": {
-    "ranAt": "2026-10-20T17:26:58.626Z",
+    "ranAt": "2026-10-21T05:07:45.202Z",
     "os": "Darwin 27.0.0 arm64",
     "cpu": "Apple M1",
     "cores": 8,
     "memoryGiB": 8,
     "node": "v24.21.0",
     "git": "git version 2.54.0 (Apple Git-157)",
-    "gitLeakHunterCommit": "e4f3de8"
+    "gitLeakHunterCommit": "70f78a1"
   },
   "seed": 1337,
   "matching": "A tool finding is a true positive when its (repo, file path, line) equals a planted secret in ground-truth.json; several reports of the same planted secret count once. Each distinct unmatched (repo, path, line) is one false positive. Planted secrets never matched are false negatives.",
   "tools": [
     {
       "tool": "git-leak-hunter",
-      "version": "0.1.0 (commit e4f3de8)",
+      "version": "0.1.0 (commit 70f78a1)",
       "command": "node --import tsx src/cli.ts scan <repo> --format json --out <out> --quiet",
       "status": "ran",
       "totals": {
@@ -48,7 +48,7 @@
           },
           "fpLocations": [],
           "rawFindings": 3,
-          "durationMs": 263
+          "durationMs": 464
         },
         {
           "repo": "head-secrets",
@@ -82,7 +82,7 @@
           },
           "fpLocations": [],
           "rawFindings": 7,
-          "durationMs": 217
+          "durationMs": 461
         },
         {
           "repo": "blob-reuse",
@@ -107,7 +107,7 @@
           },
           "fpLocations": [],
           "rawFindings": 4,
-          "durationMs": 234
+          "durationMs": 504
         },
         {
           "repo": "merge-conflict",
@@ -126,7 +126,7 @@
           },
           "fpLocations": [],
           "rawFindings": 2,
-          "durationMs": 226
+          "durationMs": 680
         },
         {
           "repo": "ci-configs",
@@ -175,7 +175,7 @@
           },
           "fpLocations": [],
           "rawFindings": 12,
-          "durationMs": 230
+          "durationMs": 411
         },
         {
           "repo": "false-positives",
@@ -187,7 +187,7 @@
           "matched": {},
           "fpLocations": [],
           "rawFindings": 0,
-          "durationMs": 219
+          "durationMs": 343
         },
         {
           "repo": "hostile",
@@ -212,7 +212,7 @@
           },
           "fpLocations": [],
           "rawFindings": 4,
-          "durationMs": 264
+          "durationMs": 413
         },
         {
           "repo": "clean",
@@ -224,7 +224,7 @@
           "matched": {},
           "fpLocations": [],
           "rawFindings": 0,
-          "durationMs": 208
+          "durationMs": 418
         }
       ]
     },
@@ -264,7 +264,7 @@
           },
           "fpLocations": [],
           "rawFindings": 3,
-          "durationMs": 63
+          "durationMs": 195
         },
         {
           "repo": "head-secrets",
@@ -298,7 +298,7 @@
           },
           "fpLocations": [],
           "rawFindings": 7,
-          "durationMs": 52
+          "durationMs": 195
         },
         {
           "repo": "blob-reuse",
@@ -323,7 +323,7 @@
           },
           "fpLocations": [],
           "rawFindings": 5,
-          "durationMs": 49
+          "durationMs": 183
         },
         {
           "repo": "merge-conflict",
@@ -338,7 +338,7 @@
           "matched": {},
           "fpLocations": [],
           "rawFindings": 0,
-          "durationMs": 48
+          "durationMs": 150
         },
         {
           "repo": "ci-configs",
@@ -384,7 +384,7 @@
           },
           "fpLocations": [],
           "rawFindings": 10,
-          "durationMs": 51
+          "durationMs": 145
         },
         {
           "repo": "false-positives",
@@ -396,7 +396,7 @@
           "matched": {},
           "fpLocations": [],
           "rawFindings": 0,
-          "durationMs": 48
+          "durationMs": 152
         },
         {
           "repo": "hostile",
@@ -421,7 +421,7 @@
           },
           "fpLocations": [],
           "rawFindings": 4,
-          "durationMs": 512
+          "durationMs": 1944
         },
         {
           "repo": "clean",
@@ -433,16 +433,192 @@
           "matched": {},
           "fpLocations": [],
           "rawFindings": 0,
-          "durationMs": 51
+          "durationMs": 102
         }
       ]
     },
     {
       "tool": "trufflehog",
-      "version": null,
+      "version": "trufflehog 3.99.3",
       "command": "trufflehog git file://<repo> --json --no-verification --no-update",
       "install": "brew install trufflehog  (or see https://github.com/trufflesecurity/trufflehog#floppy_disk-installation)",
-      "status": "not run"
+      "status": "ran",
+      "totals": {
+        "planted": 32,
+        "tp": 14,
+        "fp": 0,
+        "fn": 18,
+        "precision": 1,
+        "recall": 0.4375,
+        "rawFindings": 15
+      },
+      "repos": [
+        {
+          "repo": "history-only",
+          "planted": 3,
+          "tp": 2,
+          "fp": 0,
+          "fn": 1,
+          "fnIds": [
+            "aws-secret (aws-secret-access-key)"
+          ],
+          "matched": {
+            "aws-key-id": [
+              "AWS"
+            ],
+            "github-token": [
+              "Github"
+            ]
+          },
+          "fpLocations": [],
+          "rawFindings": 2,
+          "durationMs": 1577
+        },
+        {
+          "repo": "head-secrets",
+          "planted": 7,
+          "tp": 3,
+          "fp": 0,
+          "fn": 4,
+          "fnIds": [
+            "stripe-test (stripe-test-key)",
+            "deploy-key (private-key)",
+            "generic-app (generic-high-entropy)",
+            "generic-docs (generic-high-entropy)"
+          ],
+          "matched": {
+            "stripe-live": [
+              "Stripe"
+            ],
+            "slack-webhook": [
+              "SlackWebhook"
+            ],
+            "slack-bot": [
+              "Slack"
+            ]
+          },
+          "fpLocations": [],
+          "rawFindings": 3,
+          "durationMs": 1516
+        },
+        {
+          "repo": "blob-reuse",
+          "planted": 4,
+          "tp": 4,
+          "fp": 0,
+          "fn": 0,
+          "fnIds": [],
+          "matched": {
+            "token-a": [
+              "Github"
+            ],
+            "token-b": [
+              "Github"
+            ],
+            "token-c": [
+              "Github"
+            ],
+            "token-d": [
+              "Github"
+            ]
+          },
+          "fpLocations": [],
+          "rawFindings": 5,
+          "durationMs": 1673
+        },
+        {
+          "repo": "merge-conflict",
+          "planted": 2,
+          "tp": 0,
+          "fp": 0,
+          "fn": 2,
+          "fnIds": [
+            "resolution-token (github-token)",
+            "evil-merge-slack (slack-token)"
+          ],
+          "matched": {},
+          "fpLocations": [],
+          "rawFindings": 0,
+          "durationMs": 2077
+        },
+        {
+          "repo": "ci-configs",
+          "planted": 12,
+          "tp": 1,
+          "fp": 0,
+          "fn": 11,
+          "fnIds": [
+            "gha-workflow-env (ci-literal)",
+            "gha-job-env (ci-literal)",
+            "gha-with-input (ci-literal)",
+            "gitlab-global (ci-literal)",
+            "gitlab-job (ci-literal)",
+            "docker-arg (dockerfile-literal)",
+            "docker-env-continuation (dockerfile-literal)",
+            "docker-env-space (dockerfile-literal)",
+            "dotenv (credential-file)",
+            "id-rsa (private-key)",
+            "credentials-json (credential-file)"
+          ],
+          "matched": {
+            "npmrc": [
+              "NpmToken"
+            ]
+          },
+          "fpLocations": [],
+          "rawFindings": 1,
+          "durationMs": 1602
+        },
+        {
+          "repo": "false-positives",
+          "planted": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "fnIds": [],
+          "matched": {},
+          "fpLocations": [],
+          "rawFindings": 0,
+          "durationMs": 1619
+        },
+        {
+          "repo": "hostile",
+          "planted": 4,
+          "tp": 4,
+          "fp": 0,
+          "fn": 0,
+          "fnIds": [],
+          "matched": {
+            "xss-filename": [
+              "Github"
+            ],
+            "dash-filename": [
+              "Stripe"
+            ],
+            "unicode-filename": [
+              "Slack"
+            ],
+            "newline-filename": [
+              "Github"
+            ]
+          },
+          "fpLocations": [],
+          "rawFindings": 4,
+          "durationMs": 1746
+        },
+        {
+          "repo": "clean",
+          "planted": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "fnIds": [],
+          "matched": {},
+          "fpLocations": [],
+          "rawFindings": 0,
+          "durationMs": 1608
+        }
+      ]
     }
   ]
 }
