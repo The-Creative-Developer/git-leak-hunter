@@ -7,3 +7,8 @@ bench/results/tmp/
 *.tgz
 .DS_Store
 demo-repos/
+
+# LaTeX build products (docs/report)
+*.aux
+*.log
+*.out
