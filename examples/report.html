@@ -5,282 +5,886 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'">
 <meta name="referrer" content="no-referrer">
-<title>Git Leak Hunter Report</title>
+<meta name="color-scheme" content="light dark">
+<title>Git Leak Hunter Report — ci-configs</title>
 <style>
-:root{--bg:#f6f7f9;--card:#fff;--ink:#14171c;--muted:#5b6370;--line:#dde1e7;--mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
---critical:#b3261e;--high:#c2410c;--medium:#a16207;--low:#2f6f4f;--accent:#1f4fd1;--hist:#6d28d9}
-@media (prefers-color-scheme:dark){:root{--bg:#0f1115;--card:#181b21;--ink:#e8eaee;--muted:#9aa3b2;--line:#2a2f38;
---critical:#ff6b61;--high:#ff8a4c;--medium:#e3b341;--low:#5cc48d;--accent:#7aa2ff;--hist:#b794f6}}
-*{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
-main{max-width:1100px;margin:0 auto;padding:24px 16px 64px}
-h1{font-size:13px;letter-spacing:.14em;color:var(--muted);margin:0 0 4px;font-weight:600}
-h2{font-size:13px;letter-spacing:.12em;color:var(--muted);margin:32px 0 12px;font-weight:600}
-.title{font-size:26px;font-weight:700;margin:0 0 20px}
-.meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:16px}
-.box{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px;min-width:0}
-.k{font-size:11px;letter-spacing:.12em;color:var(--muted);font-weight:600;text-transform:uppercase}
-.v{font-size:15px;overflow-wrap:anywhere}
-.mono{font-family:var(--mono);font-size:13px}
-.counts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
-.count{border-left:6px solid var(--c);}
-.count .n{font-size:30px;font-weight:700;color:var(--c)}
-.sev-critical{--c:var(--critical)}.sev-high{--c:var(--high)}.sev-medium{--c:var(--medium)}.sev-low{--c:var(--low)}
-.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
-.controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:8px 0 16px}
-.controls button,.controls select{font:inherit;font-size:13px;padding:6px 12px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer}
-.controls button[aria-pressed="true"]{border-color:var(--accent);color:var(--accent);font-weight:600}
-.card{background:var(--card);border:1px solid var(--line);border-left:6px solid var(--c);border-radius:10px;padding:16px;margin-bottom:14px;break-inside:avoid}
-.card-head{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;margin-bottom:12px}
-.badge{display:inline-block;font-size:12px;font-weight:700;letter-spacing:.1em;padding:3px 10px;border-radius:6px;border:2px solid var(--c);color:var(--c)}
-.type{font-size:17px;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
-.presence{font-size:12px;font-weight:700;letter-spacing:.06em;padding:3px 10px;border-radius:6px;border:1px dashed var(--line);color:var(--muted)}
-.presence.hist{border:2px solid var(--hist);color:var(--hist)}
-.fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px 18px}
-.preview{font-family:var(--mono);font-size:14px;background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:2px 8px;display:inline-block;overflow-wrap:anywhere}
-details{margin-top:12px}
-summary{cursor:pointer;color:var(--accent);font-size:13px}
-pre{white-space:pre-wrap;overflow-wrap:anywhere;font-family:var(--mono);font-size:12.5px;background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:8px 10px;margin:8px 0 0}
-.empty{padding:28px;text-align:center;color:var(--muted)}
-.warn{border:1px solid var(--line);border-radius:10px;padding:10px 14px;color:var(--muted);font-size:13px;margin-top:24px}
-footer{margin-top:32px;color:var(--muted);font-size:12px}
-@media (max-width:640px){.counts{grid-template-columns:repeat(2,minmax(0,1fr))}.title{font-size:22px}}
-@media print{body{background:#fff;color:#000}.controls{display:none}.card,.box{border-color:#999}details{display:block}details>*{display:block}}
+:root{
+  --paper:#efe9dd; --sheet:#fbf8f2; --sheet-2:#f5f0e6; --ink:#1c1a16; --ink-2:#47423a; --muted:#6f685c;
+  --rule:#d8cfbf; --rule-2:#e7e0d2; --accent:#25407a; --accent-soft:#dfe5f1; --focus:#25407a;
+  --redact:#1c1a16; --code:#f1ebdf; --shadow:0 1px 0 rgba(28,26,22,.04),0 8px 24px -12px rgba(28,26,22,.18);
+  --sev-critical:#9b1c1c; --sev-high:#d9531e; --sev-medium:#e6a03a; --sev-low:#4f74b8;
+  --on-critical:#fff; --on-high:#fff; --on-medium:#1c1a16; --on-low:#fff;
+  --hatch:rgba(28,26,22,.55); --grain:.07;
+  --serif:"Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua","URW Palladio L",Georgia,serif;
+  --sans:"Avenir Next",Avenir,"Segoe UI Variable Text","Segoe UI","Helvetica Neue",Ubuntu,sans-serif;
+  --mono:"Berkeley Mono","JetBrains Mono","SF Mono","Cascadia Code",Menlo,Consolas,"Liberation Mono",monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --paper:#0f1012; --sheet:#17181b; --sheet-2:#1d1f23; --ink:#ece6da; --ink-2:#c3bbab; --muted:#958d7f;
+  --rule:#2d2f34; --rule-2:#24262a; --accent:#9db4ff; --accent-soft:#232a3d; --focus:#9db4ff;
+  --redact:#ece6da; --code:#121315; --shadow:0 1px 0 rgba(0,0,0,.3),0 12px 32px -16px rgba(0,0,0,.7);
+  --sev-critical:#ff958c; --sev-high:#cc5a1e; --sev-medium:#d9a43a; --sev-low:#4f86d9;
+  --on-critical:#1c0d0b; --on-high:#fff; --on-medium:#17130b; --on-low:#fff;
+  --hatch:rgba(236,230,218,.5); --grain:.05; color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --paper:#0f1012; --sheet:#17181b; --sheet-2:#1d1f23; --ink:#ece6da; --ink-2:#c3bbab; --muted:#958d7f;
+  --rule:#2d2f34; --rule-2:#24262a; --accent:#9db4ff; --accent-soft:#232a3d; --focus:#9db4ff;
+  --redact:#ece6da; --code:#121315; --shadow:0 1px 0 rgba(0,0,0,.3),0 12px 32px -16px rgba(0,0,0,.7);
+  --sev-critical:#ff958c; --sev-high:#cc5a1e; --sev-medium:#d9a43a; --sev-low:#4f86d9;
+  --on-critical:#1c0d0b; --on-high:#fff; --on-medium:#17130b; --on-low:#fff;
+  --hatch:rgba(236,230,218,.5); --grain:.05; color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:76px}
+body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.55 var(--sans);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+.grain{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;opacity:var(--grain);z-index:0;mix-blend-mode:multiply}
+:root[data-theme="dark"] .grain{mix-blend-mode:screen}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .grain{mix-blend-mode:screen}}
+.wrap{position:relative;z-index:1;max-width:1180px;margin:0 auto;padding:0 28px}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px;border-radius:4px}
+.skip{position:absolute;left:-9999px;top:8px;background:var(--ink);color:var(--sheet);padding:8px 12px;border-radius:6px;z-index:20}
+.skip:focus{left:12px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.mono{font-family:var(--mono);font-size:.86em;letter-spacing:-.01em}
+.eyebrow{font:600 11px/1 var(--mono);letter-spacing:.18em;text-transform:uppercase;color:var(--muted)}
+
+/* ---------- top bar ---------- */
+.bar{position:sticky;top:0;z-index:10;background:color-mix(in srgb,var(--paper) 86%,transparent);backdrop-filter:saturate(1.2) blur(10px);-webkit-backdrop-filter:saturate(1.2) blur(10px);border-bottom:1px solid var(--rule)}
+.bar .wrap{display:flex;align-items:center;gap:18px;height:58px}
+.brand{display:flex;align-items:center;gap:10px;font:600 15px/1 var(--serif);letter-spacing:.01em;white-space:nowrap}
+.brand svg{flex:none}
+.nav{display:flex;gap:4px;margin-left:12px}
+.nav a{font:500 13px/1 var(--sans);color:var(--ink-2);text-decoration:none;padding:8px 12px;border-radius:999px}
+.nav a:hover{background:var(--sheet-2);color:var(--ink)}
+.bar .spacer{flex:1}
+.iconbtn{display:inline-flex;align-items:center;gap:8px;font:500 13px/1 var(--sans);color:var(--ink);background:var(--sheet);border:1px solid var(--rule);padding:8px 12px;border-radius:999px;cursor:pointer}
+.iconbtn:hover{border-color:var(--ink-2)}
+.iconbtn svg{width:15px;height:15px}
+
+/* ---------- case header ---------- */
+.classified{margin-top:26px;display:flex;align-items:center;gap:14px;color:var(--muted)}
+.classified::before,.classified::after{content:"";flex:1;height:0;border-top:1px dashed var(--rule)}
+.case{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:32px;align-items:end;padding:22px 0 30px;border-bottom:2px solid var(--ink)}
+.case h1{font:500 clamp(36px,6vw,68px)/.98 var(--serif);letter-spacing:-.02em;margin:10px 0 12px;overflow-wrap:anywhere}
+.case .target{font-family:var(--mono);font-size:13px;color:var(--ink-2);overflow-wrap:anywhere}
+.meta{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:0;margin-top:22px;border-top:1px solid var(--rule)}
+.meta div{padding:12px 16px 0 0}
+.meta dt{font:600 10.5px/1 var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin-bottom:7px}
+.meta dd{margin:0;font-size:14px;overflow-wrap:anywhere}
+.stamp{--c:var(--ink);justify-self:end;transform:rotate(-7deg);border:3px double var(--c);color:var(--c);padding:14px 22px 12px;text-align:center;border-radius:6px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.14em;position:relative;min-width:220px;animation:thunk .5s cubic-bezier(.2,1.6,.4,1) .35s both}
+.stamp b{display:block;font:700 22px/1.05 var(--mono);letter-spacing:.08em}
+.stamp small{display:block;font-size:10.5px;margin-top:6px;opacity:.85}
+.stamp::after{content:"";position:absolute;inset:-3px;border-radius:6px;background:repeating-linear-gradient(115deg,transparent 0 9px,var(--paper) 9px 10px);opacity:.35;pointer-events:none;mix-blend-mode:normal}
+.stamp.sev-critical{--c:var(--sev-critical)}.stamp.sev-high{--c:var(--sev-high)}.stamp.sev-medium{--c:var(--ink)}.stamp.sev-low{--c:var(--sev-low)}.stamp.clean{--c:var(--accent)}
+@keyframes thunk{from{opacity:0;transform:rotate(-7deg) scale(1.6)}to{opacity:1;transform:rotate(-7deg) scale(1)}}
+
+/* ---------- sections ---------- */
+section{padding:44px 0 8px}
+.sechead{display:flex;align-items:baseline;gap:16px;margin-bottom:18px}
+.sechead h2{font:500 30px/1.1 var(--serif);letter-spacing:-.01em;margin:0}
+.sechead .num{font:600 12px/1 var(--mono);color:var(--muted);letter-spacing:.12em}
+.sechead p{margin:0 0 0 auto;color:var(--muted);font-size:13px;max-width:52ch;text-align:right}
+.grid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:16px}
+.panel{background:var(--sheet);border:1px solid var(--rule);border-radius:14px;padding:20px 22px;box-shadow:var(--shadow);min-width:0}
+.panel h3{font:600 11px/1 var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin:0 0 16px}
+.span-3{grid-column:span 3}.span-4{grid-column:span 4}.span-5{grid-column:span 5}.span-6{grid-column:span 6}.span-7{grid-column:span 7}.span-8{grid-column:span 8}.span-12{grid-column:span 12}
+.reveal{animation:rise .6s cubic-bezier(.2,.7,.2,1) both;animation-delay:calc(var(--i,0)*70ms)}
+@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+
+/* severity tiles */
+.tile{position:relative;overflow:hidden;padding:18px 20px 16px}
+.tile .label{display:flex;align-items:center;gap:8px;font:600 11px/1 var(--mono);letter-spacing:.16em;color:var(--ink-2)}
+.tile .count{font:500 56px/1 var(--serif);letter-spacing:-.03em;margin:14px 0 6px;font-variant-numeric:lining-nums tabular-nums}
+.tile .share{font-size:12.5px;color:var(--muted)}
+.tile::before{content:"";position:absolute;left:0;top:0;bottom:0;width:5px;background:var(--c)}
+.tile.zero .count{color:var(--muted)}
+.sw{display:inline-block;width:10px;height:10px;border-radius:3px;background:var(--c);flex:none}
+.sev-critical{--c:var(--sev-critical);--on:var(--on-critical)}.sev-high{--c:var(--sev-high);--on:var(--on-high)}.sev-medium{--c:var(--sev-medium);--on:var(--on-medium)}.sev-low{--c:var(--sev-low);--on:var(--on-low)}
+
+/* stacked severity bar */
+.stack{display:flex;gap:2px;height:22px;border-radius:6px;overflow:hidden;background:var(--rule-2)}
+.stack span{background:var(--c);min-width:3px}
+.legend{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 18px;margin:16px 0 0;padding:0;list-style:none}
+.legend li{display:flex;align-items:center;gap:9px;font-size:13.5px}
+.legend b{font-weight:600;margin-left:auto;font-variant-numeric:tabular-nums}
+.legend em{font-style:normal;color:var(--muted);font-size:12px;min-width:3.5em;text-align:right;font-variant-numeric:tabular-nums}
+
+/* exposure */
+.expo{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+.expo .n{font:500 40px/1 var(--serif);font-variant-numeric:tabular-nums}
+.expo .k{font:600 10.5px/1.3 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-top:6px}
+.split{display:flex;gap:2px;height:14px;border-radius:5px;overflow:hidden;background:var(--rule-2)}
+.split .head{background:var(--ink)}
+.split .hist{background:repeating-linear-gradient(45deg,var(--hatch) 0 2px,transparent 2px 6px);box-shadow:inset 0 0 0 1px var(--hatch)}
+.note{font-size:12.5px;color:var(--muted);margin:12px 0 0}
+.keyhatch{display:inline-block;width:12px;height:12px;vertical-align:-1px;border-radius:3px;background:repeating-linear-gradient(45deg,var(--hatch) 0 2px,transparent 2px 5px);box-shadow:inset 0 0 0 1px var(--hatch);margin-right:6px}
+.keyink{display:inline-block;width:12px;height:12px;vertical-align:-1px;border-radius:3px;background:var(--ink);margin-right:6px}
+
+/* bar lists */
+.bars{list-style:none;margin:0;padding:0;display:grid;gap:11px}
+.bars li{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 12px;align-items:center;font-size:13.5px}
+.bars .lbl{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bars .val{font-weight:600;font-variant-numeric:tabular-nums}
+.bars .track{grid-column:1/-1;height:8px;background:var(--rule-2);border-radius:4px;overflow:hidden}
+.bars .fill{display:block;height:100%;background:var(--accent);border-radius:0 4px 4px 0;min-width:3px}
+.bars.files .lbl{font-family:var(--mono);font-size:12.5px}
+.empty-mini{color:var(--muted);font-size:13px;margin:0}
+
+/* timeline */
+.timeline svg{display:block;width:100%;height:auto;overflow:visible}
+.timeline .axis{stroke:var(--rule);stroke-width:1}
+.timeline .tick{fill:var(--muted);font:11px var(--mono)}
+.timeline .dot{stroke:var(--sheet);stroke-width:2.5}
+.timeline .dot.hist{fill-opacity:.35;stroke:var(--c);stroke-dasharray:2 2}
+.timeline .dot.sev-critical{fill:var(--sev-critical);--c:var(--sev-critical)}.timeline .dot.sev-high{fill:var(--sev-high)}.timeline .dot.sev-medium{fill:var(--sev-medium)}.timeline .dot.sev-low{fill:var(--sev-low)}
+.timeline .dot.hist.sev-high{stroke:var(--sev-high)}.timeline .dot.hist.sev-medium{stroke:var(--sev-medium)}.timeline .dot.hist.sev-low{stroke:var(--sev-low)}.timeline .dot.hist.sev-critical{stroke:var(--sev-critical)}
+.tl-legend{display:flex;flex-wrap:wrap;gap:8px 18px;margin-top:10px;font-size:12.5px;color:var(--ink-2)}
+.tl-legend span{display:inline-flex;align-items:center;gap:6px}
+.ring{width:11px;height:11px;border-radius:50%;border:1.5px dashed var(--ink-2)}
+.solid{width:11px;height:11px;border-radius:50%;background:var(--ink-2)}
+
+/* verification */
+.vlist{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.vlist li{display:flex;justify-content:space-between;align-items:center;padding:8px 10px;border-radius:8px;background:var(--sheet-2);font-size:13.5px}
+.vlist b{font-variant-numeric:tabular-nums}
+.pill{display:inline-flex;align-items:center;gap:6px;font:600 10.5px/1 var(--mono);letter-spacing:.12em;text-transform:uppercase;padding:5px 8px;border-radius:999px;border:1px solid var(--rule);color:var(--ink-2);background:var(--sheet)}
+.pill i{width:7px;height:7px;border-radius:50%;background:var(--muted)}
+.pill.v-ACTIVE i{background:var(--sev-critical)}.pill.v-INACTIVE i{background:var(--sev-low)}.pill.v-UNVERIFIABLE i{background:var(--sev-medium)}
+
+/* ---------- findings explorer ---------- */
+.toolbar{position:sticky;top:58px;z-index:5;background:color-mix(in srgb,var(--paper) 92%,transparent);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);padding:12px 0;margin-bottom:6px;border-bottom:1px solid var(--rule);display:grid;gap:10px}
+.trow{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.search{flex:1 1 280px;display:flex;align-items:center;gap:8px;background:var(--sheet);border:1px solid var(--rule);border-radius:10px;padding:0 10px}
+.search:focus-within{border-color:var(--focus);box-shadow:0 0 0 3px var(--accent-soft)}
+.search input{flex:1;border:0;background:transparent;color:var(--ink);font:14px var(--sans);padding:10px 2px;outline:none;min-width:0}
+.search kbd{font:11px var(--mono);color:var(--muted);border:1px solid var(--rule);border-radius:5px;padding:2px 6px}
+.chip{display:inline-flex;align-items:center;gap:7px;font:600 11.5px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;padding:9px 12px;border-radius:999px;border:1px solid var(--rule);background:var(--sheet);color:var(--ink-2);cursor:pointer}
+.chip:hover{border-color:var(--ink-2)}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--sheet);border-color:var(--ink)}
+.chip .n{font-variant-numeric:tabular-nums;opacity:.75}
+.seg{display:inline-flex;border:1px solid var(--rule);border-radius:999px;overflow:hidden;background:var(--sheet)}
+.seg button{font:500 12.5px/1 var(--sans);border:0;background:transparent;color:var(--ink-2);padding:9px 13px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--accent-soft);color:var(--ink);font-weight:600}
+select{font:500 12.5px/1 var(--sans);color:var(--ink);background:var(--sheet);border:1px solid var(--rule);border-radius:999px;padding:9px 12px}
+.tiny{font:500 12.5px/1 var(--sans);background:none;border:0;color:var(--accent);cursor:pointer;padding:8px 4px;text-decoration:underline;text-underline-offset:3px}
+.count-line{font-size:13px;color:var(--muted);margin-left:auto}
+.list{display:grid;gap:14px;padding-top:12px}
+.card{display:grid;grid-template-columns:76px minmax(0,1fr);background:var(--sheet);border:1px solid var(--rule);border-radius:14px;box-shadow:var(--shadow);overflow:hidden;scroll-margin-top:140px}
+.card[hidden]{display:none}
+.card .rail{background:var(--c);color:var(--on);display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:16px 6px}
+.card .idx{font:600 11px/1 var(--mono);letter-spacing:.1em;opacity:.85}
+.card .sevtxt{writing-mode:vertical-rl;transform:rotate(180deg);font:700 12px/1 var(--mono);letter-spacing:.32em}
+.card .body{padding:18px 22px 6px;min-width:0}
+.card h4{font:500 22px/1.15 var(--serif);margin:0 0 8px;letter-spacing:-.01em}
+.tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.tag{font:600 10.5px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;padding:5px 8px;border-radius:6px;background:var(--sheet-2);color:var(--ink-2);border:1px solid var(--rule-2)}
+.tag.hist{background:repeating-linear-gradient(45deg,transparent 0 5px,var(--rule-2) 5px 7px);color:var(--ink);border:1px dashed var(--ink-2)}
+.tag.head{background:var(--ink);color:var(--sheet);border-color:var(--ink)}
+.path{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:13.5px;overflow-wrap:anywhere;margin-bottom:12px}
+.path .ln{color:var(--muted)}
+.facts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:0 0 14px;padding:12px 0;border-top:1px dashed var(--rule);border-bottom:1px dashed var(--rule)}
+.facts dt{font:600 10px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.facts dd{margin:0;font-size:13.5px;overflow-wrap:anywhere}
+.evidence{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;margin-bottom:12px}
+.redact{display:inline-flex;align-items:center;font-family:var(--mono);font-size:14px;border:1px solid var(--rule);border-radius:7px;background:var(--sheet-2);padding:5px 9px;gap:2px;max-width:100%;overflow-wrap:anywhere}
+.redact .blk{background:var(--redact);color:transparent;border-radius:2px;letter-spacing:-.06em;user-select:none;-webkit-user-select:none;padding:0 2px}
+.copy{flex:none;white-space:nowrap;font:500 11.5px/1 var(--sans);border:1px solid var(--rule);background:var(--sheet);color:var(--ink-2);border-radius:6px;padding:5px 8px;cursor:pointer}
+.copy:hover{border-color:var(--ink-2);color:var(--ink)}
+.copy.done{border-color:var(--sev-low);color:var(--ink)}
+details.more{border-top:1px solid var(--rule-2);margin:0 -22px;padding:0 22px}
+details.more summary{cursor:pointer;list-style:none;padding:12px 0;font:600 12px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--accent);display:flex;align-items:center;gap:8px}
+details.more summary::-webkit-details-marker{display:none}
+details.more summary::before{content:"+";font:600 15px/1 var(--mono);width:14px}
+details.more[open] summary::before{content:"\2212"}
+.drawer{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:20px;padding:4px 0 20px}
+.k{font:600 10px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin:14px 0 7px}
+.k:first-child{margin-top:4px}
+.code{display:grid;grid-template-columns:auto minmax(0,1fr);background:var(--code);border:1px solid var(--rule);border-radius:9px;font:12.5px/1.6 var(--mono);overflow:hidden}
+.code .g{padding:8px 10px;color:var(--muted);border-right:1px solid var(--rule);text-align:right;user-select:none}
+.code pre{margin:0;padding:8px 12px;white-space:pre-wrap;overflow-wrap:anywhere;font:inherit}
+.msg{margin:0;padding:10px 12px;background:var(--sheet-2);border-left:3px solid var(--rule);border-radius:0 8px 8px 0;font-size:13.5px;white-space:pre-wrap;overflow-wrap:anywhere}
+.steps{margin:0;padding-left:18px;font-size:13.5px;display:grid;gap:6px}
+.kv{display:grid;grid-template-columns:auto minmax(0,1fr);gap:7px 14px;margin:0;font-size:13px}
+.kv dt{color:var(--muted)}
+.kv dd{margin:0;overflow-wrap:anywhere}
+.meter{display:flex;align-items:center;gap:10px}
+.meter .m{flex:1;height:8px;border-radius:4px;background:var(--rule-2);position:relative;overflow:hidden}
+.meter .m span{display:block;position:absolute;left:0;top:0;bottom:0;background:var(--accent);border-radius:0 4px 4px 0}
+.none{display:none;text-align:center;padding:46px 20px;border:1px dashed var(--rule);border-radius:14px;color:var(--muted)}
+.none.on{display:block}
+.clean{text-align:center;padding:60px 24px}
+.clean h3{font:500 34px/1.1 var(--serif);margin:14px 0 8px;letter-spacing:-.01em;text-transform:none;color:var(--ink)}
+.clean p{color:var(--muted);max-width:56ch;margin:0 auto}
+
+/* ---------- details ---------- */
+.stat .v{font:500 34px/1 var(--serif);font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.stat .s{font-size:12.5px;color:var(--muted);margin-top:6px}
+table.opts{width:100%;border-collapse:collapse;font-size:13.5px}
+table.opts th,table.opts td{text-align:left;padding:9px 0;border-bottom:1px dashed var(--rule)}
+table.opts th{font-weight:500;color:var(--muted);width:46%}
+table.opts td{font-family:var(--mono);font-size:12.5px}
+
+footer{margin:56px 0 40px;padding-top:22px;border-top:2px solid var(--ink);display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:28px;font-size:13px;color:var(--ink-2)}
+footer h5{font:600 11px/1 var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin:0 0 10px}
+footer ul{margin:0;padding-left:18px;display:grid;gap:4px}
+footer .sig{font-family:var(--mono);font-size:12px;color:var(--muted);text-align:right;align-self:end}
+
+@media (max-width:980px){
+  .span-3{grid-column:span 6}.span-4,.span-5,.span-7,.span-8,.span-6{grid-column:span 12}
+  .meta{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .drawer{grid-template-columns:1fr}
+  .nav{display:none}
+}
+@media (max-width:640px){
+  .wrap{padding:0 16px}
+  .case{grid-template-columns:1fr}
+  .stamp{justify-self:start;min-width:0}
+  .meta{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .span-3{grid-column:span 6}
+  .tile .count{font-size:42px}
+  .sechead{flex-wrap:wrap}.sechead p{margin:0;text-align:left}
+  .card{grid-template-columns:44px minmax(0,1fr)}
+  .card .body{padding:16px 16px 4px}
+  details.more{margin:0 -16px;padding:0 16px}
+  .facts{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .legend{grid-template-columns:1fr}
+  footer{grid-template-columns:1fr}footer .sig{text-align:left}
+  .brand .full{display:none}
+  .bar .wrap{gap:10px}
+  .iconbtn span{display:none}
+  .iconbtn{padding:9px}
+  .toolbar{position:static;background:none;backdrop-filter:none;-webkit-backdrop-filter:none}
+}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+@media print{
+  :root{--paper:#fff;--sheet:#fff;--sheet-2:#f6f6f6;--ink:#000;--ink-2:#222;--muted:#555;--rule:#bbb;--rule-2:#ddd;--shadow:none;--code:#f6f6f6;--redact:#000;color-scheme:light}
+  .grain,.bar,.toolbar,.copy,.tiny,.skip{display:none!important}
+  body{font-size:11pt}
+  .card,.panel{break-inside:avoid;box-shadow:none}
+  .card[hidden]{display:grid!important}
+  details.more>*{display:block}
+  .reveal,.stamp{animation:none}
+  section{padding-top:24px}
+  *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
+@media (forced-colors:active){.card .rail,.tile::before,.stack span,.bars .fill{forced-color-adjust:none}}
 </style>
 </head>
 <body>
-<main>
-<h1>GIT LEAK HUNTER · SECURITY REPORT</h1>
-<p class="title">ci-configs</p>
-<section class="meta">
-<div class="box"><div class="k">Repository</div><div class="v mono">ci-configs</div></div>
-<div class="box"><div class="k">Scan date</div><div class="v">2026-10-20T17:31:39.523Z</div></div>
-<div class="box"><div class="k">HEAD</div><div class="v mono">07dda7a82f0f</div></div>
-<div class="box"><div class="k">Total findings</div><div class="v">12</div></div>
+<svg class="grain" aria-hidden="true" preserveAspectRatio="none"><filter id="glh-grain"><feTurbulence type="fractalNoise" baseFrequency=".85" numOctaves="2" stitchTiles="stitch"/><feColorMatrix values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 .9 0"/></filter><rect width="100%" height="100%" filter="url(#glh-grain)"/></svg>
+<a class="skip" href="#findings">Skip to findings</a>
+<div class="bar"><div class="wrap">
+<span class="brand"><svg width="26" height="26" viewBox="0 0 32 32" aria-hidden="true"><circle cx="13" cy="13" r="9" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M19.6 19.6 28 28" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><circle cx="9.5" cy="10" r="1.8" fill="currentColor"/><circle cx="16.5" cy="16" r="1.8" fill="currentColor"/><path d="M9.5 11.8v2.4a3 3 0 0 0 3 3h2.2" fill="none" stroke="currentColor" stroke-width="1.6"/></svg><span>Git Leak Hunter<span class="full" style="color:var(--muted);font-family:var(--sans);font-weight:400;font-size:13px"> · security report</span></span></span>
+<nav class="nav" aria-label="Sections"><a href="#overview">Overview</a><a href="#findings">Findings <span class="mono">12</span></a><a href="#details">Scan details</a></nav>
+<span class="spacer"></span>
+<button type="button" class="iconbtn" id="theme" aria-label="Toggle theme"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg><span class="t">Dark</span></button>
+<button type="button" class="iconbtn" id="print" aria-label="Print or save as PDF"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 9V3h10v6M7 17H4v-7h16v7h-3M7 14h10v7H7z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg><span>Print</span></button>
+</div></div>
+<main class="wrap">
+<p class="classified eyebrow">Confidential · Secret-exposure assessment</p>
+<header class="case">
+<div>
+<div class="eyebrow">Case GLH-B26F-07DDA7A</div>
+<h1>ci-configs</h1>
+<div class="target">ci-configs</div>
+<dl class="meta">
+<div><dt>Scanned</dt><dd>2026-10-27 07:17 UTC</dd></div>
+<div><dt>HEAD</dt><dd class="mono">07dda7a82f0f</dd></div>
+<div><dt>History</dt><dd>4 commits</dd></div>
+<div><dt>Duration</dt><dd>57 ms</dd></div>
+<div><dt>Engine</dt><dd>git-leak-hunter 0.1.0</dd></div>
+</dl>
+</div>
+<div class="stamp sev-critical" role="img" aria-label="Verdict: Critical exposure"><b>Critical exposure</b><small>12 findings · 1 history-only</small></div>
+</header>
+<section id="overview" aria-labelledby="h-overview">
+<div class="sechead"><span class="num">01</span><h2 id="h-overview">Overview</h2><p>What was found, how severe it is, and whether it is still in the current tree.</p></div>
+<div class="grid"><a href="#findings" data-jump="critical" class="panel tile span-3 sev-critical" style="text-decoration:none;color:inherit;--i:0" aria-label="CRITICAL: 1 findings — show them"><div class="label"><span class="sw"></span>CRITICAL</div><div class="count">1</div><div class="share">8.3% of findings</div></a><a href="#findings" data-jump="high" class="panel tile span-3 sev-high" style="text-decoration:none;color:inherit;--i:1" aria-label="HIGH: 11 findings — show them"><div class="label"><span class="sw"></span>HIGH</div><div class="count">11</div><div class="share">92% of findings</div></a><a href="#findings" data-jump="medium" class="panel tile span-3 sev-medium zero" style="text-decoration:none;color:inherit;--i:2" aria-label="MEDIUM: 0 findings — show them"><div class="label"><span class="sw"></span>MEDIUM</div><div class="count">0</div><div class="share">0% of findings</div></a><a href="#findings" data-jump="low" class="panel tile span-3 sev-low zero" style="text-decoration:none;color:inherit;--i:3" aria-label="LOW: 0 findings — show them"><div class="label"><span class="sw"></span>LOW</div><div class="count">0</div><div class="share">0% of findings</div></a>
+<div class="panel span-7" class="reveal" style="--i:4"><h3>Severity distribution</h3><div class="stack" role="img" aria-label="Severity distribution"><span class="sev-critical" style="flex:1" title="CRITICAL: 1"></span><span class="sev-high" style="flex:11" title="HIGH: 11"></span></div><ul class="legend"><li><span class="sw sev-critical"></span>Critical<b>1</b><em>8.3%</em></li><li><span class="sw sev-high"></span>High<b>11</b><em>92%</em></li><li><span class="sw sev-medium"></span>Medium<b>0</b><em>0%</em></li><li><span class="sw sev-low"></span>Low<b>0</b><em>0%</em></li></ul></div>
+<div class="panel span-5" class="reveal" style="--i:5"><h3>Exposure</h3><div class="expo"><div><div class="n">11</div><div class="k"><span class="keyink"></span>Present at HEAD</div></div><div><div class="n">1</div><div class="k"><span class="keyhatch"></span>History-only</div></div></div>
+<div class="split" role="img" aria-label="11 present at HEAD, 1 history-only"><span class="head" style="flex:11"></span><span class="hist" style="flex:1"></span></div>
+<p class="note">History-only secrets were deleted in a later commit but stay recoverable from Git history until it is rewritten. Rotation is what closes the exposure; deleting the line does not.</p></div>
+<div class="panel span-12 timeline" class="reveal" style="--i:6"><h3>When each secret was first committed</h3><svg viewBox="0 0 1000 127" role="img" aria-label="Timeline of when each finding was first committed, 12 findings"><line class="axis" x1="0" x2="1000" y1="97" y2="97"/><circle class="dot sev-high hist" cx="17.0" cy="87.0" r="7"><title>HIGH · GitHub Actions Literal Secret · .github/workflows/deploy.yml · 2025-01-06 09:00 UTC · history-only</title></circle><circle class="dot sev-high" cx="17.0" cy="70.0" r="7"><title>HIGH · GitHub Actions Literal Secret · .github/workflows/deploy.yml · 2025-01-06 09:00 UTC · in-HEAD</title></circle><circle class="dot sev-high" cx="17.0" cy="53.0" r="7"><title>HIGH · GitHub Actions Literal Secret · .github/workflows/deploy.yml · 2025-01-06 09:00 UTC · in-HEAD</title></circle><circle class="dot sev-high" cx="493.0" cy="87.0" r="7"><title>HIGH · GitLab CI Literal Secret · .gitlab-ci.yml · 2025-01-06 10:00 UTC · in-HEAD</title></circle><circle class="dot sev-high" cx="493.0" cy="70.0" r="7"><title>HIGH · GitLab CI Literal Secret · .gitlab-ci.yml · 2025-01-06 10:00 UTC · in-HEAD</title></circle><circle class="dot sev-high" cx="493.0" cy="53.0" r="7"><title>HIGH · Dockerfile ENV/ARG Secret · Dockerfile · 2025-01-06 10:00 UTC · in-HEAD</title></circle><circle class="dot sev-high" cx="493.0" cy="36.0" r="7"><title>HIGH · Dockerfile ENV/ARG Secret · Dockerfile · 2025-01-06 10:00 UTC · in-HEAD</title></circle><circle class="dot sev-high" cx="493.0" cy="19.0" r="7"><title>HIGH · Dockerfile ENV/ARG Secret · Dockerfile · 2025-01-06 10:00 UTC · in-HEAD</title></circle><circle class="dot sev-critical" cx="986.0" cy="87.0" r="7"><title>CRITICAL · Private Key · .ssh/id_rsa · 2025-01-06 11:00 UTC · in-HEAD</title></circle><circle class="dot sev-high" cx="986.0" cy="70.0" r="7"><title>HIGH · Secret in .env File · .env · 2025-01-06 11:00 UTC · in-HEAD</title></circle><circle class="dot sev-high" cx="986.0" cy="53.0" r="7"><title>HIGH · npm Auth Token · .npmrc · 2025-01-06 11:00 UTC · in-HEAD</title></circle><circle class="dot sev-high" cx="986.0" cy="36.0" r="7"><title>HIGH · Secret in Credentials File · config/credentials.json · 2025-01-06 11:00 UTC · in-HEAD</title></circle><text class="tick" x="16" y="117">2025-01-06 09:00 UTC</text><text class="tick" x="984" y="117" text-anchor="end">2025-01-06 11:00 UTC</text></svg><div class="tl-legend"><span><i class="solid"></i>Present at HEAD</span><span><i class="ring"></i>History-only</span><span><span class="sw sev-critical"></span>CRITICAL</span><span><span class="sw sev-high"></span>HIGH</span><span><span class="sw sev-medium"></span>MEDIUM</span><span><span class="sw sev-low"></span>LOW</span><span style="color:var(--muted)">Hover a dot for details</span></div></div>
+<div class="panel span-4" class="reveal" style="--i:7"><h3>By secret type</h3><ul class="bars "><li><span class="lbl" title="Dockerfile ENV/ARG Secret">Dockerfile ENV/ARG Secret</span><span class="val">3</span><span class="track"><span class="fill" style="width:100.00%"></span></span></li><li><span class="lbl" title="GitHub Actions Literal Secret">GitHub Actions Literal Secret</span><span class="val">3</span><span class="track"><span class="fill" style="width:100.00%"></span></span></li><li><span class="lbl" title="GitLab CI Literal Secret">GitLab CI Literal Secret</span><span class="val">2</span><span class="track"><span class="fill" style="width:66.67%"></span></span></li><li><span class="lbl" title="npm Auth Token">npm Auth Token</span><span class="val">1</span><span class="track"><span class="fill" style="width:33.33%"></span></span></li><li><span class="lbl" title="Private Key">Private Key</span><span class="val">1</span><span class="track"><span class="fill" style="width:33.33%"></span></span></li><li><span class="lbl" title="Secret in .env File">Secret in .env File</span><span class="val">1</span><span class="track"><span class="fill" style="width:33.33%"></span></span></li><li><span class="lbl" title="Secret in Credentials File">Secret in Credentials File</span><span class="val">1</span><span class="track"><span class="fill" style="width:33.33%"></span></span></li></ul></div>
+<div class="panel span-4" class="reveal" style="--i:8"><h3>Most affected files</h3><ul class="bars files"><li><span class="lbl" title=".github/workflows/deploy.yml">.github/workflows/deploy.yml</span><span class="val">3</span><span class="track"><span class="fill" style="width:100.00%"></span></span></li><li><span class="lbl" title="Dockerfile">Dockerfile</span><span class="val">3</span><span class="track"><span class="fill" style="width:100.00%"></span></span></li><li><span class="lbl" title=".gitlab-ci.yml">.gitlab-ci.yml</span><span class="val">2</span><span class="track"><span class="fill" style="width:66.67%"></span></span></li><li><span class="lbl" title=".env">.env</span><span class="val">1</span><span class="track"><span class="fill" style="width:33.33%"></span></span></li><li><span class="lbl" title=".npmrc">.npmrc</span><span class="val">1</span><span class="track"><span class="fill" style="width:33.33%"></span></span></li><li><span class="lbl" title=".ssh/id_rsa">.ssh/id_rsa</span><span class="val">1</span><span class="track"><span class="fill" style="width:33.33%"></span></span></li><li><span class="lbl" title="config/credentials.json">config/credentials.json</span><span class="val">1</span><span class="track"><span class="fill" style="width:33.33%"></span></span></li></ul></div>
+<div class="panel span-4" class="reveal" style="--i:9"><h3>Detection layer</h3><ul class="bars "><li><span class="lbl" title="CI/CD config">CI/CD config</span><span class="val">8</span><span class="track"><span class="fill" style="width:100.00%"></span></span></li><li><span class="lbl" title="Credential file">Credential file</span><span class="val">3</span><span class="track"><span class="fill" style="width:37.50%"></span></span></li><li><span class="lbl" title="Signature">Signature</span><span class="val">1</span><span class="track"><span class="fill" style="width:12.50%"></span></span></li></ul><div class="k" style="margin-top:20px">Live verification</div><ul class="vlist"><li><span class="pill v-ACTIVE"><i></i>ACTIVE</span><b>0</b></li><li><span class="pill v-INACTIVE"><i></i>INACTIVE</span><b>0</b></li><li><span class="pill v-UNVERIFIABLE"><i></i>UNVERIFIABLE</span><b>0</b></li><li><span class="pill v-NOT_CHECKED"><i></i>NOT CHECKED</span><b>12</b></li></ul><p class="note">Live verification was not run. It is opt-in: <span class="mono">--verify --confirm-authorized</span>.</p></div>
+</div>
 </section>
-<section class="counts" aria-label="Findings by severity"><div class="box count sev-critical"><div class="k">CRITICAL</div><div class="n">1</div></div><div class="box count sev-high"><div class="k">HIGH</div><div class="n">11</div></div><div class="box count sev-medium"><div class="k">MEDIUM</div><div class="n">0</div></div><div class="box count sev-low"><div class="k">LOW</div><div class="n">0</div></div></section>
-<h2>SCAN STATS</h2>
-<section class="stats"><div class="box"><div class="k">Commits walked</div><div class="v">4</div></div><div class="box"><div class="k">File versions seen</div><div class="v">8</div></div><div class="box"><div class="k">Unique blobs scanned</div><div class="v">8</div></div><div class="box"><div class="k">Cache hits</div><div class="v">0</div></div><div class="box"><div class="k">Bytes scanned</div><div class="v">2258</div></div><div class="box"><div class="k">Duration</div><div class="v">54.4 ms</div></div><div class="box"><div class="k">Skipped (binary / oversize / ignored / missing)</div><div class="v">0 / 0 / 0 / 0</div></div><div class="box"><div class="k">History-only findings</div><div class="v">1</div></div></section>
-<h2>FINDINGS (<span id="shown">12</span>)</h2>
-<div class="controls" role="toolbar" aria-label="Filter findings"><button type="button" data-filter-sev="all" aria-pressed="true">All</button><button type="button" data-filter-sev="critical" aria-pressed="false">CRITICAL</button><button type="button" data-filter-sev="high" aria-pressed="false">HIGH</button><button type="button" data-filter-sev="medium" aria-pressed="false">MEDIUM</button><button type="button" data-filter-sev="low" aria-pressed="false">LOW</button>
-<select id="presence" aria-label="Presence"><option value="all">In HEAD + history-only</option><option value="in-HEAD">Present at HEAD</option><option value="history-only">History-only</option></select>
-<select id="sort" aria-label="Sort"><option value="severity">Sort: severity</option><option value="recent">Sort: most recent</option></select>
+<section id="findings" aria-labelledby="h-findings">
+<div class="sechead"><span class="num">02</span><h2 id="h-findings">Findings</h2><p>Each card is one secret at one path, attributed to the commit that introduced it. Values are redacted.</p></div>
+<div class="toolbar" role="search">
+<div class="trow">
+<label class="search"><svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m16 16 4.5 4.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span class="sr">Filter findings</span><input id="q" type="search" placeholder="Filter by path, type, rule, commit, author…" autocomplete="off" spellcheck="false"><kbd>/</kbd></label>
+<div class="seg" role="group" aria-label="Presence"><button type="button" data-presence-btn="all" aria-pressed="true">All</button><button type="button" data-presence-btn="in-HEAD" aria-pressed="false">At HEAD</button><button type="button" data-presence-btn="history-only" aria-pressed="false">History-only</button></div>
 </div>
-<section id="findings">
-<article class="card sev-critical" data-severity="critical" data-presence="in-HEAD" data-order="0" data-time="1736161200000">
-<div class="card-head"><span class="badge">CRITICAL</span><span class="type">Private Key</span><span class="presence">PRESENT AT HEAD</span></div>
-<div class="fields">
-<div><div class="k">File path</div><div class="v mono">.ssh/id_rsa</div></div>
-<div><div class="k">Commit hash</div><div class="v mono">ed6879c</div></div>
-<div><div class="k">Line number</div><div class="v">1</div></div>
-<div><div class="k">Redacted preview</div><div class="v"><span class="preview">BEGIN OPENSSH PRIVATE KEY [REDACTED, 14 lines]</span></div></div>
-<div><div class="k">Verification status</div><div class="v">NOT CHECKED</div></div>
+<div class="trow">
+<button type="button" class="chip" data-sev-chip="critical" aria-pressed="false"><span class="sw sev-critical"></span>CRITICAL <span class="n">1</span></button><button type="button" class="chip" data-sev-chip="high" aria-pressed="false"><span class="sw sev-high"></span>HIGH <span class="n">11</span></button><button type="button" class="chip" data-sev-chip="medium" aria-pressed="false"><span class="sw sev-medium"></span>MEDIUM <span class="n">0</span></button><button type="button" class="chip" data-sev-chip="low" aria-pressed="false"><span class="sw sev-low"></span>LOW <span class="n">0</span></button>
+<select id="detector" aria-label="Detector"><option value="all">All detectors</option><option value="signature">Signature</option><option value="ci">CI/CD config</option><option value="credential-file">Credential file</option></select>
+<select id="sort" aria-label="Sort"><option value="severity">Sort: severity</option><option value="newest">Sort: newest first</option><option value="oldest">Sort: oldest first</option><option value="path">Sort: file path</option></select>
+<button type="button" class="tiny" id="expand">Expand all</button><button type="button" class="tiny" id="collapse">Collapse all</button>
+<span class="count-line" aria-live="polite">Showing <b id="shown">12</b> of 12</span>
 </div>
-<details><summary>Details</summary>
-<div class="fields" style="margin-top:10px"><div><div class="k">Rule</div><div class="v mono">private-key</div></div><div><div class="k">Detector</div><div class="v">signature</div></div><div><div class="k">First seen commit</div><div class="v mono">ed6879cbdf854f01fe22001352ef29476873d450</div></div><div><div class="k">Other commits containing it</div><div class="v">0</div></div><div><div class="k">Author</div><div class="v">Fixture Bot &lt;fixture-bot@example.test&gt;</div></div><div><div class="k">Date</div><div class="v">2025-01-06T11:00:00Z</div></div><div><div class="k">Blob</div><div class="v mono">975854feff3cc4a13f63103dd67542758712ccf3</div></div><div><div class="k">Fingerprint</div><div class="v mono">fd8e922094b8e18075e5c4c5e048ad37</div></div></div>
-<div class="k" style="margin-top:12px">Commit message</div><pre>Add local environment files</pre>
-<div class="k" style="margin-top:12px">Context (redacted)</div><pre>BEGIN OPENSSH PRIVATE KEY [REDACTED, 14 lines]</pre>
+</div><div class="list" id="list"><article class="card sev-critical" id="f-fd8e922094b8e18075e5c4c5e048ad37" data-sev="critical" data-presence="in-HEAD" data-detector="signature" data-order="0" data-time="1736161200000" data-path=".ssh/id_rsa" data-search=".ssh/id_rsa private key private-key signature ed6879cbdf854f01fe22001352ef29476873d450 fixture bot add local environment files in-head critical">
+<div class="rail" aria-hidden="true"><span class="idx">#01</span><span class="sevtxt">CRITICAL</span><span></span></div>
+<div class="body">
+<span class="sr">Severity: CRITICAL.</span>
+<h4>Private Key</h4>
+<div class="tags"><span class="tag head">Present at HEAD</span><span class="tag">Signature</span><span class="tag">private-key</span></div>
+<div class="path"><span>.ssh/id_rsa<span class="ln">:1</span></span><button class="copy" type="button" data-copy=".ssh/id_rsa" aria-label="Copy file path">Copy</button></div>
+<dl class="facts">
+<div><dt>Commit</dt><dd class="mono">ed6879cbdf</dd></div>
+<div><dt>Line</dt><dd>1<span class="mono" style="color:var(--muted)"> col 1</span></dd></div>
+<div><dt>Introduced</dt><dd>2025-01-06</dd></div>
+<div><dt>Author</dt><dd>Fixture Bot</dd></div>
+</dl>
+<div class="evidence"><span class="k" style="margin:0">Evidence</span><span class="redact">BEGIN OPENSSH PRIVATE KEY <span class="blk" aria-label="redacted">[REDACTED, 14 lines]</span></span><span class="pill v-NOT_CHECKED"><i></i>NOT CHECKED</span></div>
+<details class="more"><summary>Investigate &amp; remediate</summary>
+<div class="drawer">
+<div>
+<div class="k">Context (redacted)</div><div class="code"><span class="g">1</span><pre>BEGIN OPENSSH PRIVATE KEY [REDACTED, 14 lines]</pre></div>
+<div class="k">Commit message</div><p class="msg">Add local environment files</p>
+<div class="k">Remediation</div><ol class="steps"><li>Treat the key pair as compromised: remove its public key from every system that trusts it, generate a new pair, and re-issue any certificate.</li><li>Remove it from the current tree as well; afterwards it will remain in history, so rotation is what actually closes the exposure.</li></ol>
+</div>
+<div>
+
+<div class="k">Provenance</div>
+<dl class="kv">
+<dt>First seen</dt><dd class="mono">ed6879cbdf854f01fe22001352ef29476873d450</dd>
+<dt>Author</dt><dd>Fixture Bot &lt;fixture-bot@example.test&gt;</dd>
+<dt>Date</dt><dd>2025-01-06 11:00 UTC</dd>
+<dt>Blob</dt><dd class="mono">975854feff3cc4a13f63103dd67542758712ccf3</dd>
+<dt>Fingerprint</dt><dd class="mono">fd8e922094b8e18075e5c4c5e048ad37 <button class="copy" type="button" data-copy="fingerprint:fd8e922094b8e18075e5c4c5e048ad37" aria-label="Copy ignore rule for this finding">Copy ignore rule</button></dd>
+
+<dt>Verification</dt><dd>NOT CHECKED</dd>
+</dl>
+</div>
+</div>
 </details>
-</article>
-<article class="card sev-high" data-severity="high" data-presence="in-HEAD" data-order="1" data-time="1736161200000">
-<div class="card-head"><span class="badge">HIGH</span><span class="type">Secret in .env File</span><span class="presence">PRESENT AT HEAD</span></div>
-<div class="fields">
-<div><div class="k">File path</div><div class="v mono">.env</div></div>
-<div><div class="k">Commit hash</div><div class="v mono">ed6879c</div></div>
-<div><div class="k">Line number</div><div class="v">2</div></div>
-<div><div class="k">Redacted preview</div><div class="v"><span class="preview">nLQF****************spqw</span></div></div>
-<div><div class="k">Verification status</div><div class="v">NOT CHECKED</div></div>
 </div>
-<details><summary>Details</summary>
-<div class="fields" style="margin-top:10px"><div><div class="k">Rule</div><div class="v mono">dotenv-secret</div></div><div><div class="k">Detector</div><div class="v">credential-file</div></div><div><div class="k">Entropy</div><div class="v">4.33 bits/char</div></div><div><div class="k">First seen commit</div><div class="v mono">ed6879cbdf854f01fe22001352ef29476873d450</div></div><div><div class="k">Other commits containing it</div><div class="v">0</div></div><div><div class="k">Author</div><div class="v">Fixture Bot &lt;fixture-bot@example.test&gt;</div></div><div><div class="k">Date</div><div class="v">2025-01-06T11:00:00Z</div></div><div><div class="k">Blob</div><div class="v mono">9d69591dcc0962a6ec6b2b21961fb52b0928f95a</div></div><div><div class="k">Fingerprint</div><div class="v mono">f773876ab82d07956c4a8f6ffa08c460</div></div></div>
-<div class="k" style="margin-top:12px">Commit message</div><pre>Add local environment files</pre>
-<div class="k" style="margin-top:12px">Context (redacted)</div><pre>DB_PASSWORD=nLQF****************spqw</pre>
-</details>
 </article>
-<article class="card sev-high" data-severity="high" data-presence="in-HEAD" data-order="2" data-time="1736161200000">
-<div class="card-head"><span class="badge">HIGH</span><span class="type">npm Auth Token</span><span class="presence">PRESENT AT HEAD</span></div>
-<div class="fields">
-<div><div class="k">File path</div><div class="v mono">.npmrc</div></div>
-<div><div class="k">Commit hash</div><div class="v mono">ed6879c</div></div>
-<div><div class="k">Line number</div><div class="v">1</div></div>
-<div><div class="k">Redacted preview</div><div class="v"><span class="preview">npm_****************rO5F</span></div></div>
-<div><div class="k">Verification status</div><div class="v">NOT CHECKED</div></div>
+<article class="card sev-high" id="f-f773876ab82d07956c4a8f6ffa08c460" data-sev="high" data-presence="in-HEAD" data-detector="credential-file" data-order="1" data-time="1736161200000" data-path=".env" data-search=".env secret in .env file dotenv-secret credential-file ed6879cbdf854f01fe22001352ef29476873d450 fixture bot add local environment files in-head high">
+<div class="rail" aria-hidden="true"><span class="idx">#02</span><span class="sevtxt">HIGH</span><span></span></div>
+<div class="body">
+<span class="sr">Severity: HIGH.</span>
+<h4>Secret in .env File</h4>
+<div class="tags"><span class="tag head">Present at HEAD</span><span class="tag">Credential file</span><span class="tag">dotenv-secret</span></div>
+<div class="path"><span>.env<span class="ln">:2</span></span><button class="copy" type="button" data-copy=".env" aria-label="Copy file path">Copy</button></div>
+<dl class="facts">
+<div><dt>Commit</dt><dd class="mono">ed6879cbdf</dd></div>
+<div><dt>Line</dt><dd>2<span class="mono" style="color:var(--muted)"> col 13</span></dd></div>
+<div><dt>Introduced</dt><dd>2025-01-06</dd></div>
+<div><dt>Author</dt><dd>Fixture Bot</dd></div>
+</dl>
+<div class="evidence"><span class="k" style="margin:0">Evidence</span><span class="redact" title="Redacted preview — the full secret is never stored in this report">nLQF<span class="blk" aria-label="redacted">****************</span>spqw</span><span class="pill v-NOT_CHECKED"><i></i>NOT CHECKED</span></div>
+<details class="more"><summary>Investigate &amp; remediate</summary>
+<div class="drawer">
+<div>
+<div class="k">Context (redacted)</div><div class="code"><span class="g">2</span><pre>DB_PASSWORD=nLQF****************spqw</pre></div>
+<div class="k">Commit message</div><p class="msg">Add local environment files</p>
+<div class="k">Remediation</div><ol class="steps"><li>Remove the file from the repository, add it to .gitignore, and rotate every credential it contains.</li><li>Remove it from the current tree as well; afterwards it will remain in history, so rotation is what actually closes the exposure.</li></ol>
 </div>
-<details><summary>Details</summary>
-<div class="fields" style="margin-top:10px"><div><div class="k">Rule</div><div class="v mono">npmrc-auth-token</div></div><div><div class="k">Detector</div><div class="v">credential-file</div></div><div><div class="k">Entropy</div><div class="v">4.71 bits/char</div></div><div><div class="k">First seen commit</div><div class="v mono">ed6879cbdf854f01fe22001352ef29476873d450</div></div><div><div class="k">Other commits containing it</div><div class="v">0</div></div><div><div class="k">Author</div><div class="v">Fixture Bot &lt;fixture-bot@example.test&gt;</div></div><div><div class="k">Date</div><div class="v">2025-01-06T11:00:00Z</div></div><div><div class="k">Blob</div><div class="v mono">24fb02988c9816f5fd702c17b72f6f0a182b6a88</div></div><div><div class="k">Fingerprint</div><div class="v mono">d9f8a9bc7379ed261af42bec03884ea8</div></div></div>
-<div class="k" style="margin-top:12px">Commit message</div><pre>Add local environment files</pre>
-<div class="k" style="margin-top:12px">Context (redacted)</div><pre>//registry.npmjs.org/:_authToken=npm_****************rO5F</pre>
-</details>
-</article>
-<article class="card sev-high" data-severity="high" data-presence="in-HEAD" data-order="3" data-time="1736161200000">
-<div class="card-head"><span class="badge">HIGH</span><span class="type">Secret in Credentials File</span><span class="presence">PRESENT AT HEAD</span></div>
-<div class="fields">
-<div><div class="k">File path</div><div class="v mono">config/credentials.json</div></div>
-<div><div class="k">Commit hash</div><div class="v mono">ed6879c</div></div>
-<div><div class="k">Line number</div><div class="v">3</div></div>
-<div><div class="k">Redacted preview</div><div class="v"><span class="preview">Zqqs****************BzZk</span></div></div>
-<div><div class="k">Verification status</div><div class="v">NOT CHECKED</div></div>
+<div>
+<div class="k">Shannon entropy</div><div class="meter"><span class="m"><span style="width:72.3%"></span></span><span class="mono">4.33 bits/char</span></div>
+<div class="k">Provenance</div>
+<dl class="kv">
+<dt>First seen</dt><dd class="mono">ed6879cbdf854f01fe22001352ef29476873d450</dd>
+<dt>Author</dt><dd>Fixture Bot &lt;fixture-bot@example.test&gt;</dd>
+<dt>Date</dt><dd>2025-01-06 11:00 UTC</dd>
+<dt>Blob</dt><dd class="mono">9d69591dcc0962a6ec6b2b21961fb52b0928f95a</dd>
+<dt>Fingerprint</dt><dd class="mono">f773876ab82d07956c4a8f6ffa08c460 <button class="copy" type="button" data-copy="fingerprint:f773876ab82d07956c4a8f6ffa08c460" aria-label="Copy ignore rule for this finding">Copy ignore rule</button></dd>
+
+<dt>Verification</dt><dd>NOT CHECKED</dd>
+</dl>
 </div>
-<details><summary>Details</summary>
-<div class="fields" style="margin-top:10px"><div><div class="k">Rule</div><div class="v mono">credentials-json-secret</div></div><div><div class="k">Detector</div><div class="v">credential-file</div></div><div><div class="k">Entropy</div><div class="v">4.73 bits/char</div></div><div><div class="k">First seen commit</div><div class="v mono">ed6879cbdf854f01fe22001352ef29476873d450</div></div><div><div class="k">Other commits containing it</div><div class="v">0</div></div><div><div class="k">Author</div><div class="v">Fixture Bot &lt;fixture-bot@example.test&gt;</div></div><div><div class="k">Date</div><div class="v">2025-01-06T11:00:00Z</div></div><div><div class="k">Blob</div><div class="v mono">12858e7353064a2ce4dc1d8d01d7deb50b5a74be</div></div><div><div class="k">Fingerprint</div><div class="v mono">707c670c95d993fb80a78da4c7779e9f</div></div></div>
-<div class="k" style="margin-top:12px">Commit message</div><pre>Add local environment files</pre>
-<div class="k" style="margin-top:12px">Context (redacted)</div><pre>  &quot;client_secret&quot;: &quot;Zqqs****************BzZk&quot;</pre>
-</details>
-</article>
-<article class="card sev-high" data-severity="high" data-presence="in-HEAD" data-order="4" data-time="1736157600000">
-<div class="card-head"><span class="badge">HIGH</span><span class="type">GitLab CI Literal Secret</span><span class="presence">PRESENT AT HEAD</span></div>
-<div class="fields">
-<div><div class="k">File path</div><div class="v mono">.gitlab-ci.yml</div></div>
-<div><div class="k">Commit hash</div><div class="v mono">b87205d</div></div>
-<div><div class="k">Line number</div><div class="v">2</div></div>
-<div><div class="k">Redacted preview</div><div class="v"><span class="preview">EMFs****************oIwY</span></div></div>
-<div><div class="k">Verification status</div><div class="v">NOT CHECKED</div></div>
 </div>
-<details><summary>Details</summary>
-<div class="fields" style="margin-top:10px"><div><div class="k">Rule</div><div class="v mono">gitlab-ci-literal</div></div><div><div class="k">Detector</div><div class="v">ci</div></div><div><div class="k">Entropy</div><div class="v">4.52 bits/char</div></div><div><div class="k">First seen commit</div><div class="v mono">b87205da5057393f6dc9103074efa23e5c1e15d7</div></div><div><div class="k">Other commits containing it</div><div class="v">0</div></div><div><div class="k">Author</div><div class="v">Fixture Bot &lt;fixture-bot@example.test&gt;</div></div><div><div class="k">Date</div><div class="v">2025-01-06T10:00:00Z</div></div><div><div class="k">Blob</div><div class="v mono">1224675ffd7fea840db4db766ab28cf3bc572728</div></div><div><div class="k">Fingerprint</div><div class="v mono">dcebf512787d0f4dd3208177e3fc2be4</div></div></div>
-<div class="k" style="margin-top:12px">Commit message</div><pre>Add GitLab CI and Dockerfile</pre>
-<div class="k" style="margin-top:12px">Context (redacted)</div><pre>  REGISTRY_PASSWORD: &quot;EMFs****************oIwY&quot;</pre>
 </details>
-</article>
-<article class="card sev-high" data-severity="high" data-presence="in-HEAD" data-order="5" data-time="1736157600000">
-<div class="card-head"><span class="badge">HIGH</span><span class="type">GitLab CI Literal Secret</span><span class="presence">PRESENT AT HEAD</span></div>
-<div class="fields">
-<div><div class="k">File path</div><div class="v mono">.gitlab-ci.yml</div></div>
-<div><div class="k">Commit hash</div><div class="v mono">b87205d</div></div>
-<div><div class="k">Line number</div><div class="v">9</div></div>
-<div><div class="k">Redacted preview</div><div class="v"><span class="preview">a8DD****************dLdP</span></div></div>
-<div><div class="k">Verification status</div><div class="v">NOT CHECKED</div></div>
 </div>
-<details><summary>Details</summary>
-<div class="fields" style="margin-top:10px"><div><div class="k">Rule</div><div class="v mono">gitlab-ci-literal</div></div><div><div class="k">Detector</div><div class="v">ci</div></div><div><div class="k">Entropy</div><div class="v">4.63 bits/char</div></div><div><div class="k">First seen commit</div><div class="v mono">b87205da5057393f6dc9103074efa23e5c1e15d7</div></div><div><div class="k">Other commits containing it</div><div class="v">0</div></div><div><div class="k">Author</div><div class="v">Fixture Bot &lt;fixture-bot@example.test&gt;</div></div><div><div class="k">Date</div><div class="v">2025-01-06T10:00:00Z</div></div><div><div class="k">Blob</div><div class="v mono">1224675ffd7fea840db4db766ab28cf3bc572728</div></div><div><div class="k">Fingerprint</div><div class="v mono">6b90663695eaa3f8383c1e437bedf6a5</div></div></div>
-<div class="k" style="margin-top:12px">Commit message</div><pre>Add GitLab CI and Dockerfile</pre>
-<div class="k" style="margin-top:12px">Context (redacted)</div><pre>    SONAR_TOKEN: a8DD****************dLdP</pre>
-</details>
 </article>
-<article class="card sev-high" data-severity="high" data-presence="in-HEAD" data-order="6" data-time="1736157600000">
-<div class="card-head"><span class="badge">HIGH</span><span class="type">Dockerfile ENV/ARG Secret</span><span class="presence">PRESENT AT HEAD</span></div>
-<div class="fields">
-<div><div class="k">File path</div><div class="v mono">Dockerfile</div></div>
-<div><div class="k">Commit hash</div><div class="v mono">b87205d</div></div>
-<div><div class="k">Line number</div><div class="v">2</div></div>
-<div><div class="k">Redacted preview</div><div class="v"><span class="preview">8NOM****************ptkr</span></div></div>
-<div><div class="k">Verification status</div><div class="v">NOT CHECKED</div></div>
+<article class="card sev-high" id="f-d9f8a9bc7379ed261af42bec03884ea8" data-sev="high" data-presence="in-HEAD" data-detector="credential-file" data-order="2" data-time="1736161200000" data-path=".npmrc" data-search=".npmrc npm auth token npmrc-auth-token credential-file ed6879cbdf854f01fe22001352ef29476873d450 fixture bot add local environment files in-head high">
+<div class="rail" aria-hidden="true"><span class="idx">#03</span><span class="sevtxt">HIGH</span><span></span></div>
+<div class="body">
+<span class="sr">Severity: HIGH.</span>
+<h4>npm Auth Token</h4>
+<div class="tags"><span class="tag head">Present at HEAD</span><span class="tag">Credential file</span><span class="tag">npmrc-auth-token</span></div>
+<div class="path"><span>.npmrc<span class="ln">:1</span></span><button class="copy" type="button" data-copy=".npmrc" aria-label="Copy file path">Copy</button></div>
+<dl class="facts">
+<div><dt>Commit</dt><dd class="mono">ed6879cbdf</dd></div>
+<div><dt>Line</dt><dd>1<span class="mono" style="color:var(--muted)"> col 34</span></dd></div>
+<div><dt>Introduced</dt><dd>2025-01-06</dd></div>
+<div><dt>Author</dt><dd>Fixture Bot</dd></div>
+</dl>
+<div class="evidence"><span class="k" style="margin:0">Evidence</span><span class="redact" title="Redacted preview — the full secret is never stored in this report">npm_<span class="blk" aria-label="redacted">****************</span>rO5F</span><span class="pill v-NOT_CHECKED"><i></i>NOT CHECKED</span></div>
+<details class="more"><summary>Investigate &amp; remediate</summary>
+<div class="drawer">
+<div>
+<div class="k">Context (redacted)</div><div class="code"><span class="g">1</span><pre>//registry.npmjs.org/:_authToken=npm_****************rO5F</pre></div>
+<div class="k">Commit message</div><p class="msg">Add local environment files</p>
+<div class="k">Remediation</div><ol class="steps"><li>Remove the file from the repository, add it to .gitignore, and rotate every credential it contains.</li><li>Remove it from the current tree as well; afterwards it will remain in history, so rotation is what actually closes the exposure.</li></ol>
 </div>
-<details><summary>Details</summary>
-<div class="fields" style="margin-top:10px"><div><div class="k">Rule</div><div class="v mono">dockerfile-literal</div></div><div><div class="k">Detector</div><div class="v">ci</div></div><div><div class="k">Entropy</div><div class="v">4.48 bits/char</div></div><div><div class="k">First seen commit</div><div class="v mono">b87205da5057393f6dc9103074efa23e5c1e15d7</div></div><div><div class="k">Other commits containing it</div><div class="v">0</div></div><div><div class="k">Author</div><div class="v">Fixture Bot &lt;fixture-bot@example.test&gt;</div></div><div><div class="k">Date</div><div class="v">2025-01-06T10:00:00Z</div></div><div><div class="k">Blob</div><div class="v mono">2b36c5f7cdaaf6a47f712f159ef7dd43970173bf</div></div><div><div class="k">Fingerprint</div><div class="v mono">6c167fd5b6418c7b32bb3764f4d32020</div></div></div>
-<div class="k" style="margin-top:12px">Commit message</div><pre>Add GitLab CI and Dockerfile</pre>
-<div class="k" style="margin-top:12px">Context (redacted)</div><pre>ARG NPM_TOKEN=8NOM****************ptkr</pre>
-</details>
-</article>
-<article class="card sev-high" data-severity="high" data-presence="in-HEAD" data-order="7" data-time="1736157600000">
-<div class="card-head"><span class="badge">HIGH</span><span class="type">Dockerfile ENV/ARG Secret</span><span class="presence">PRESENT AT HEAD</span></div>
-<div class="fields">
-<div><div class="k">File path</div><div class="v mono">Dockerfile</div></div>
-<div><div class="k">Commit hash</div><div class="v mono">b87205d</div></div>
-<div><div class="k">Line number</div><div class="v">4</div></div>
-<div><div class="k">Redacted preview</div><div class="v"><span class="preview">izhT****************4sN5</span></div></div>
-<div><div class="k">Verification status</div><div class="v">NOT CHECKED</div></div>
+<div>
+<div class="k">Shannon entropy</div><div class="meter"><span class="m"><span style="width:78.6%"></span></span><span class="mono">4.71 bits/char</span></div>
+<div class="k">Provenance</div>
+<dl class="kv">
+<dt>First seen</dt><dd class="mono">ed6879cbdf854f01fe22001352ef29476873d450</dd>
+<dt>Author</dt><dd>Fixture Bot &lt;fixture-bot@example.test&gt;</dd>
+<dt>Date</dt><dd>2025-01-06 11:00 UTC</dd>
+<dt>Blob</dt><dd class="mono">24fb02988c9816f5fd702c17b72f6f0a182b6a88</dd>
+<dt>Fingerprint</dt><dd class="mono">d9f8a9bc7379ed261af42bec03884ea8 <button class="copy" type="button" data-copy="fingerprint:d9f8a9bc7379ed261af42bec03884ea8" aria-label="Copy ignore rule for this finding">Copy ignore rule</button></dd>
+
+<dt>Verification</dt><dd>NOT CHECKED</dd>
+</dl>
 </div>
-<details><summary>Details</summary>
-<div class="fields" style="margin-top:10px"><div><div class="k">Rule</div><div class="v mono">dockerfile-literal</div></div><div><div class="k">Detector</div><div class="v">ci</div></div><div><div class="k">Entropy</div><div class="v">4.63 bits/char</div></div><div><div class="k">First seen commit</div><div class="v mono">b87205da5057393f6dc9103074efa23e5c1e15d7</div></div><div><div class="k">Other commits containing it</div><div class="v">0</div></div><div><div class="k">Author</div><div class="v">Fixture Bot &lt;fixture-bot@example.test&gt;</div></div><div><div class="k">Date</div><div class="v">2025-01-06T10:00:00Z</div></div><div><div class="k">Blob</div><div class="v mono">2b36c5f7cdaaf6a47f712f159ef7dd43970173bf</div></div><div><div class="k">Fingerprint</div><div class="v mono">229f58a7bddc5bb12c249edcf65f55be</div></div></div>
-<div class="k" style="margin-top:12px">Commit message</div><pre>Add GitLab CI and Dockerfile</pre>
-<div class="k" style="margin-top:12px">Context (redacted)</div><pre>    API_SECRET=izhT****************4sN5</pre>
-</details>
-</article>
-<article class="card sev-high" data-severity="high" data-presence="in-HEAD" data-order="8" data-time="1736157600000">
-<div class="card-head"><span class="badge">HIGH</span><span class="type">Dockerfile ENV/ARG Secret</span><span class="presence">PRESENT AT HEAD</span></div>
-<div class="fields">
-<div><div class="k">File path</div><div class="v mono">Dockerfile</div></div>
-<div><div class="k">Commit hash</div><div class="v mono">b87205d</div></div>
-<div><div class="k">Line number</div><div class="v">5</div></div>
-<div><div class="k">Redacted preview</div><div class="v"><span class="preview">xZmP****************xYBL</span></div></div>
-<div><div class="k">Verification status</div><div class="v">NOT CHECKED</div></div>
 </div>
-<details><summary>Details</summary>
-<div class="fields" style="margin-top:10px"><div><div class="k">Rule</div><div class="v mono">dockerfile-literal</div></div><div><div class="k">Detector</div><div class="v">ci</div></div><div><div class="k">Entropy</div><div class="v">3.94 bits/char</div></div><div><div class="k">First seen commit</div><div class="v mono">b87205da5057393f6dc9103074efa23e5c1e15d7</div></div><div><div class="k">Other commits containing it</div><div class="v">0</div></div><div><div class="k">Author</div><div class="v">Fixture Bot &lt;fixture-bot@example.test&gt;</div></div><div><div class="k">Date</div><div class="v">2025-01-06T10:00:00Z</div></div><div><div class="k">Blob</div><div class="v mono">2b36c5f7cdaaf6a47f712f159ef7dd43970173bf</div></div><div><div class="k">Fingerprint</div><div class="v mono">fec8e4afb485eef99ccd2626624e797b</div></div></div>
-<div class="k" style="margin-top:12px">Commit message</div><pre>Add GitLab CI and Dockerfile</pre>
-<div class="k" style="margin-top:12px">Context (redacted)</div><pre>ENV SERVICE_PASSWORD xZmP****************xYBL</pre>
 </details>
-</article>
-<article class="card sev-high" data-severity="high" data-presence="history-only" data-order="9" data-time="1736154000000">
-<div class="card-head"><span class="badge">HIGH</span><span class="type">GitHub Actions Literal Secret</span><span class="presence hist">HISTORY-ONLY · deleted but still recoverable</span></div>
-<div class="fields">
-<div><div class="k">File path</div><div class="v mono">.github/workflows/deploy.yml</div></div>
-<div><div class="k">Commit hash</div><div class="v mono">ced1a10</div></div>
-<div><div class="k">Line number</div><div class="v">4</div></div>
-<div><div class="k">Redacted preview</div><div class="v"><span class="preview">LCS3****************dWF0</span></div></div>
-<div><div class="k">Verification status</div><div class="v">NOT CHECKED</div></div>
 </div>
-<details><summary>Details</summary>
-<div class="fields" style="margin-top:10px"><div><div class="k">Rule</div><div class="v mono">github-actions-literal</div></div><div><div class="k">Detector</div><div class="v">ci</div></div><div><div class="k">Entropy</div><div class="v">4.63 bits/char</div></div><div><div class="k">First seen commit</div><div class="v mono">ced1a10670d20e369ef4a4f8e5aa662781b9b2cc</div></div><div><div class="k">Other commits containing it</div><div class="v">0</div></div><div><div class="k">Author</div><div class="v">Fixture Bot &lt;fixture-bot@example.test&gt;</div></div><div><div class="k">Date</div><div class="v">2025-01-06T09:00:00Z</div></div><div><div class="k">Blob</div><div class="v mono">240e2e2466032dbbd0910be5cb0fbe0fa5ff6496</div></div><div><div class="k">Fingerprint</div><div class="v mono">95c998c2573389e6a2b4c02d35aab6a3</div></div></div>
-<div class="k" style="margin-top:12px">Commit message</div><pre>Add deploy workflow</pre>
-<div class="k" style="margin-top:12px">Context (redacted)</div><pre>  DEPLOY_API_KEY: LCS3****************dWF0</pre>
-</details>
 </article>
-<article class="card sev-high" data-severity="high" data-presence="in-HEAD" data-order="10" data-time="1736154000000">
-<div class="card-head"><span class="badge">HIGH</span><span class="type">GitHub Actions Literal Secret</span><span class="presence">PRESENT AT HEAD</span></div>
-<div class="fields">
-<div><div class="k">File path</div><div class="v mono">.github/workflows/deploy.yml</div></div>
-<div><div class="k">Commit hash</div><div class="v mono">ced1a10</div></div>
-<div><div class="k">Line number</div><div class="v">9</div></div>
-<div><div class="k">Redacted preview</div><div class="v"><span class="preview">dzEp****************9iB7</span></div></div>
-<div><div class="k">Verification status</div><div class="v">NOT CHECKED</div></div>
+<article class="card sev-high" id="f-707c670c95d993fb80a78da4c7779e9f" data-sev="high" data-presence="in-HEAD" data-detector="credential-file" data-order="3" data-time="1736161200000" data-path="config/credentials.json" data-search="config/credentials.json secret in credentials file credentials-json-secret credential-file ed6879cbdf854f01fe22001352ef29476873d450 fixture bot add local environment files in-head high">
+<div class="rail" aria-hidden="true"><span class="idx">#04</span><span class="sevtxt">HIGH</span><span></span></div>
+<div class="body">
+<span class="sr">Severity: HIGH.</span>
+<h4>Secret in Credentials File</h4>
+<div class="tags"><span class="tag head">Present at HEAD</span><span class="tag">Credential file</span><span class="tag">credentials-json-secret</span></div>
+<div class="path"><span>config/credentials.json<span class="ln">:3</span></span><button class="copy" type="button" data-copy="config/credentials.json" aria-label="Copy file path">Copy</button></div>
+<dl class="facts">
+<div><dt>Commit</dt><dd class="mono">ed6879cbdf</dd></div>
+<div><dt>Line</dt><dd>3<span class="mono" style="color:var(--muted)"> col 21</span></dd></div>
+<div><dt>Introduced</dt><dd>2025-01-06</dd></div>
+<div><dt>Author</dt><dd>Fixture Bot</dd></div>
+</dl>
+<div class="evidence"><span class="k" style="margin:0">Evidence</span><span class="redact" title="Redacted preview — the full secret is never stored in this report">Zqqs<span class="blk" aria-label="redacted">****************</span>BzZk</span><span class="pill v-NOT_CHECKED"><i></i>NOT CHECKED</span></div>
+<details class="more"><summary>Investigate &amp; remediate</summary>
+<div class="drawer">
+<div>
+<div class="k">Context (redacted)</div><div class="code"><span class="g">3</span><pre>  &quot;client_secret&quot;: &quot;Zqqs****************BzZk&quot;</pre></div>
+<div class="k">Commit message</div><p class="msg">Add local environment files</p>
+<div class="k">Remediation</div><ol class="steps"><li>Remove the file from the repository, add it to .gitignore, and rotate every credential it contains.</li><li>Remove it from the current tree as well; afterwards it will remain in history, so rotation is what actually closes the exposure.</li></ol>
 </div>
-<details><summary>Details</summary>
-<div class="fields" style="margin-top:10px"><div><div class="k">Rule</div><div class="v mono">github-actions-literal</div></div><div><div class="k">Detector</div><div class="v">ci</div></div><div><div class="k">Entropy</div><div class="v">4.17 bits/char</div></div><div><div class="k">First seen commit</div><div class="v mono">ced1a10670d20e369ef4a4f8e5aa662781b9b2cc</div></div><div><div class="k">Other commits containing it</div><div class="v">1</div></div><div><div class="k">Author</div><div class="v">Fixture Bot &lt;fixture-bot@example.test&gt;</div></div><div><div class="k">Date</div><div class="v">2025-01-06T09:00:00Z</div></div><div><div class="k">Blob</div><div class="v mono">240e2e2466032dbbd0910be5cb0fbe0fa5ff6496</div></div><div><div class="k">Fingerprint</div><div class="v mono">65b48b81eae1b21448b24aa3ffac6248</div></div></div>
-<div class="k" style="margin-top:12px">Commit message</div><pre>Add deploy workflow</pre>
-<div class="k" style="margin-top:12px">Context (redacted)</div><pre>      DATABASE_PASSWORD: &quot;dzEp****************9iB7&quot;</pre>
-</details>
-</article>
-<article class="card sev-high" data-severity="high" data-presence="in-HEAD" data-order="11" data-time="1736154000000">
-<div class="card-head"><span class="badge">HIGH</span><span class="type">GitHub Actions Literal Secret</span><span class="presence">PRESENT AT HEAD</span></div>
-<div class="fields">
-<div><div class="k">File path</div><div class="v mono">.github/workflows/deploy.yml</div></div>
-<div><div class="k">Commit hash</div><div class="v mono">ced1a10</div></div>
-<div><div class="k">Line number</div><div class="v">15</div></div>
-<div><div class="k">Redacted preview</div><div class="v"><span class="preview">Gr9Y****************vLWH</span></div></div>
-<div><div class="k">Verification status</div><div class="v">NOT CHECKED</div></div>
+<div>
+<div class="k">Shannon entropy</div><div class="meter"><span class="m"><span style="width:78.9%"></span></span><span class="mono">4.73 bits/char</span></div>
+<div class="k">Provenance</div>
+<dl class="kv">
+<dt>First seen</dt><dd class="mono">ed6879cbdf854f01fe22001352ef29476873d450</dd>
+<dt>Author</dt><dd>Fixture Bot &lt;fixture-bot@example.test&gt;</dd>
+<dt>Date</dt><dd>2025-01-06 11:00 UTC</dd>
+<dt>Blob</dt><dd class="mono">12858e7353064a2ce4dc1d8d01d7deb50b5a74be</dd>
+<dt>Fingerprint</dt><dd class="mono">707c670c95d993fb80a78da4c7779e9f <button class="copy" type="button" data-copy="fingerprint:707c670c95d993fb80a78da4c7779e9f" aria-label="Copy ignore rule for this finding">Copy ignore rule</button></dd>
+
+<dt>Verification</dt><dd>NOT CHECKED</dd>
+</dl>
 </div>
-<details><summary>Details</summary>
-<div class="fields" style="margin-top:10px"><div><div class="k">Rule</div><div class="v mono">github-actions-literal</div></div><div><div class="k">Detector</div><div class="v">ci</div></div><div><div class="k">Entropy</div><div class="v">4.50 bits/char</div></div><div><div class="k">First seen commit</div><div class="v mono">ced1a10670d20e369ef4a4f8e5aa662781b9b2cc</div></div><div><div class="k">Other commits containing it</div><div class="v">1</div></div><div><div class="k">Author</div><div class="v">Fixture Bot &lt;fixture-bot@example.test&gt;</div></div><div><div class="k">Date</div><div class="v">2025-01-06T09:00:00Z</div></div><div><div class="k">Blob</div><div class="v mono">240e2e2466032dbbd0910be5cb0fbe0fa5ff6496</div></div><div><div class="k">Fingerprint</div><div class="v mono">fe76382328bad26e720268d7081c6d43</div></div></div>
-<div class="k" style="margin-top:12px">Commit message</div><pre>Add deploy workflow</pre>
-<div class="k" style="margin-top:12px">Context (redacted)</div><pre>          api_token: Gr9Y****************vLWH</pre>
+</div>
 </details>
+</div>
 </article>
+<article class="card sev-high" id="f-dcebf512787d0f4dd3208177e3fc2be4" data-sev="high" data-presence="in-HEAD" data-detector="ci" data-order="4" data-time="1736157600000" data-path=".gitlab-ci.yml" data-search=".gitlab-ci.yml gitlab ci literal secret gitlab-ci-literal ci b87205da5057393f6dc9103074efa23e5c1e15d7 fixture bot add gitlab ci and dockerfile in-head high">
+<div class="rail" aria-hidden="true"><span class="idx">#05</span><span class="sevtxt">HIGH</span><span></span></div>
+<div class="body">
+<span class="sr">Severity: HIGH.</span>
+<h4>GitLab CI Literal Secret</h4>
+<div class="tags"><span class="tag head">Present at HEAD</span><span class="tag">CI/CD config</span><span class="tag">gitlab-ci-literal</span></div>
+<div class="path"><span>.gitlab-ci.yml<span class="ln">:2</span></span><button class="copy" type="button" data-copy=".gitlab-ci.yml" aria-label="Copy file path">Copy</button></div>
+<dl class="facts">
+<div><dt>Commit</dt><dd class="mono">b87205da50</dd></div>
+<div><dt>Line</dt><dd>2<span class="mono" style="color:var(--muted)"> col 23</span></dd></div>
+<div><dt>Introduced</dt><dd>2025-01-06</dd></div>
+<div><dt>Author</dt><dd>Fixture Bot</dd></div>
+</dl>
+<div class="evidence"><span class="k" style="margin:0">Evidence</span><span class="redact" title="Redacted preview — the full secret is never stored in this report">EMFs<span class="blk" aria-label="redacted">****************</span>oIwY</span><span class="pill v-NOT_CHECKED"><i></i>NOT CHECKED</span></div>
+<details class="more"><summary>Investigate &amp; remediate</summary>
+<div class="drawer">
+<div>
+<div class="k">Context (redacted)</div><div class="code"><span class="g">2</span><pre>  REGISTRY_PASSWORD: &quot;EMFs****************oIwY&quot;</pre></div>
+<div class="k">Commit message</div><p class="msg">Add GitLab CI and Dockerfile</p>
+<div class="k">Remediation</div><ol class="steps"><li>Move the value into the CI provider&#39;s secret store (e.g. ${{ secrets.NAME }} or a masked CI/CD variable) and rotate it.</li><li>Remove it from the current tree as well; afterwards it will remain in history, so rotation is what actually closes the exposure.</li></ol>
+</div>
+<div>
+<div class="k">Shannon entropy</div><div class="meter"><span class="m"><span style="width:75.4%"></span></span><span class="mono">4.52 bits/char</span></div>
+<div class="k">Provenance</div>
+<dl class="kv">
+<dt>First seen</dt><dd class="mono">b87205da5057393f6dc9103074efa23e5c1e15d7</dd>
+<dt>Author</dt><dd>Fixture Bot &lt;fixture-bot@example.test&gt;</dd>
+<dt>Date</dt><dd>2025-01-06 10:00 UTC</dd>
+<dt>Blob</dt><dd class="mono">1224675ffd7fea840db4db766ab28cf3bc572728</dd>
+<dt>Fingerprint</dt><dd class="mono">dcebf512787d0f4dd3208177e3fc2be4 <button class="copy" type="button" data-copy="fingerprint:dcebf512787d0f4dd3208177e3fc2be4" aria-label="Copy ignore rule for this finding">Copy ignore rule</button></dd>
+
+<dt>Verification</dt><dd>NOT CHECKED</dd>
+</dl>
+</div>
+</div>
+</details>
+</div>
+</article>
+<article class="card sev-high" id="f-6b90663695eaa3f8383c1e437bedf6a5" data-sev="high" data-presence="in-HEAD" data-detector="ci" data-order="5" data-time="1736157600000" data-path=".gitlab-ci.yml" data-search=".gitlab-ci.yml gitlab ci literal secret gitlab-ci-literal ci b87205da5057393f6dc9103074efa23e5c1e15d7 fixture bot add gitlab ci and dockerfile in-head high">
+<div class="rail" aria-hidden="true"><span class="idx">#06</span><span class="sevtxt">HIGH</span><span></span></div>
+<div class="body">
+<span class="sr">Severity: HIGH.</span>
+<h4>GitLab CI Literal Secret</h4>
+<div class="tags"><span class="tag head">Present at HEAD</span><span class="tag">CI/CD config</span><span class="tag">gitlab-ci-literal</span></div>
+<div class="path"><span>.gitlab-ci.yml<span class="ln">:9</span></span><button class="copy" type="button" data-copy=".gitlab-ci.yml" aria-label="Copy file path">Copy</button></div>
+<dl class="facts">
+<div><dt>Commit</dt><dd class="mono">b87205da50</dd></div>
+<div><dt>Line</dt><dd>9<span class="mono" style="color:var(--muted)"> col 18</span></dd></div>
+<div><dt>Introduced</dt><dd>2025-01-06</dd></div>
+<div><dt>Author</dt><dd>Fixture Bot</dd></div>
+</dl>
+<div class="evidence"><span class="k" style="margin:0">Evidence</span><span class="redact" title="Redacted preview — the full secret is never stored in this report">a8DD<span class="blk" aria-label="redacted">****************</span>dLdP</span><span class="pill v-NOT_CHECKED"><i></i>NOT CHECKED</span></div>
+<details class="more"><summary>Investigate &amp; remediate</summary>
+<div class="drawer">
+<div>
+<div class="k">Context (redacted)</div><div class="code"><span class="g">9</span><pre>    SONAR_TOKEN: a8DD****************dLdP</pre></div>
+<div class="k">Commit message</div><p class="msg">Add GitLab CI and Dockerfile</p>
+<div class="k">Remediation</div><ol class="steps"><li>Move the value into the CI provider&#39;s secret store (e.g. ${{ secrets.NAME }} or a masked CI/CD variable) and rotate it.</li><li>Remove it from the current tree as well; afterwards it will remain in history, so rotation is what actually closes the exposure.</li></ol>
+</div>
+<div>
+<div class="k">Shannon entropy</div><div class="meter"><span class="m"><span style="width:77.1%"></span></span><span class="mono">4.63 bits/char</span></div>
+<div class="k">Provenance</div>
+<dl class="kv">
+<dt>First seen</dt><dd class="mono">b87205da5057393f6dc9103074efa23e5c1e15d7</dd>
+<dt>Author</dt><dd>Fixture Bot &lt;fixture-bot@example.test&gt;</dd>
+<dt>Date</dt><dd>2025-01-06 10:00 UTC</dd>
+<dt>Blob</dt><dd class="mono">1224675ffd7fea840db4db766ab28cf3bc572728</dd>
+<dt>Fingerprint</dt><dd class="mono">6b90663695eaa3f8383c1e437bedf6a5 <button class="copy" type="button" data-copy="fingerprint:6b90663695eaa3f8383c1e437bedf6a5" aria-label="Copy ignore rule for this finding">Copy ignore rule</button></dd>
+
+<dt>Verification</dt><dd>NOT CHECKED</dd>
+</dl>
+</div>
+</div>
+</details>
+</div>
+</article>
+<article class="card sev-high" id="f-6c167fd5b6418c7b32bb3764f4d32020" data-sev="high" data-presence="in-HEAD" data-detector="ci" data-order="6" data-time="1736157600000" data-path="dockerfile" data-search="dockerfile dockerfile env/arg secret dockerfile-literal ci b87205da5057393f6dc9103074efa23e5c1e15d7 fixture bot add gitlab ci and dockerfile in-head high">
+<div class="rail" aria-hidden="true"><span class="idx">#07</span><span class="sevtxt">HIGH</span><span></span></div>
+<div class="body">
+<span class="sr">Severity: HIGH.</span>
+<h4>Dockerfile ENV/ARG Secret</h4>
+<div class="tags"><span class="tag head">Present at HEAD</span><span class="tag">CI/CD config</span><span class="tag">dockerfile-literal</span></div>
+<div class="path"><span>Dockerfile<span class="ln">:2</span></span><button class="copy" type="button" data-copy="Dockerfile" aria-label="Copy file path">Copy</button></div>
+<dl class="facts">
+<div><dt>Commit</dt><dd class="mono">b87205da50</dd></div>
+<div><dt>Line</dt><dd>2<span class="mono" style="color:var(--muted)"> col 15</span></dd></div>
+<div><dt>Introduced</dt><dd>2025-01-06</dd></div>
+<div><dt>Author</dt><dd>Fixture Bot</dd></div>
+</dl>
+<div class="evidence"><span class="k" style="margin:0">Evidence</span><span class="redact" title="Redacted preview — the full secret is never stored in this report">8NOM<span class="blk" aria-label="redacted">****************</span>ptkr</span><span class="pill v-NOT_CHECKED"><i></i>NOT CHECKED</span></div>
+<details class="more"><summary>Investigate &amp; remediate</summary>
+<div class="drawer">
+<div>
+<div class="k">Context (redacted)</div><div class="code"><span class="g">2</span><pre>ARG NPM_TOKEN=8NOM****************ptkr</pre></div>
+<div class="k">Commit message</div><p class="msg">Add GitLab CI and Dockerfile</p>
+<div class="k">Remediation</div><ol class="steps"><li>ENV/ARG values persist in image layers and history. Use build secrets or runtime environment variables, rebuild and re-push images, and rotate the value.</li><li>Remove it from the current tree as well; afterwards it will remain in history, so rotation is what actually closes the exposure.</li></ol>
+</div>
+<div>
+<div class="k">Shannon entropy</div><div class="meter"><span class="m"><span style="width:74.6%"></span></span><span class="mono">4.48 bits/char</span></div>
+<div class="k">Provenance</div>
+<dl class="kv">
+<dt>First seen</dt><dd class="mono">b87205da5057393f6dc9103074efa23e5c1e15d7</dd>
+<dt>Author</dt><dd>Fixture Bot &lt;fixture-bot@example.test&gt;</dd>
+<dt>Date</dt><dd>2025-01-06 10:00 UTC</dd>
+<dt>Blob</dt><dd class="mono">2b36c5f7cdaaf6a47f712f159ef7dd43970173bf</dd>
+<dt>Fingerprint</dt><dd class="mono">6c167fd5b6418c7b32bb3764f4d32020 <button class="copy" type="button" data-copy="fingerprint:6c167fd5b6418c7b32bb3764f4d32020" aria-label="Copy ignore rule for this finding">Copy ignore rule</button></dd>
+
+<dt>Verification</dt><dd>NOT CHECKED</dd>
+</dl>
+</div>
+</div>
+</details>
+</div>
+</article>
+<article class="card sev-high" id="f-229f58a7bddc5bb12c249edcf65f55be" data-sev="high" data-presence="in-HEAD" data-detector="ci" data-order="7" data-time="1736157600000" data-path="dockerfile" data-search="dockerfile dockerfile env/arg secret dockerfile-literal ci b87205da5057393f6dc9103074efa23e5c1e15d7 fixture bot add gitlab ci and dockerfile in-head high">
+<div class="rail" aria-hidden="true"><span class="idx">#08</span><span class="sevtxt">HIGH</span><span></span></div>
+<div class="body">
+<span class="sr">Severity: HIGH.</span>
+<h4>Dockerfile ENV/ARG Secret</h4>
+<div class="tags"><span class="tag head">Present at HEAD</span><span class="tag">CI/CD config</span><span class="tag">dockerfile-literal</span></div>
+<div class="path"><span>Dockerfile<span class="ln">:4</span></span><button class="copy" type="button" data-copy="Dockerfile" aria-label="Copy file path">Copy</button></div>
+<dl class="facts">
+<div><dt>Commit</dt><dd class="mono">b87205da50</dd></div>
+<div><dt>Line</dt><dd>4<span class="mono" style="color:var(--muted)"> col 16</span></dd></div>
+<div><dt>Introduced</dt><dd>2025-01-06</dd></div>
+<div><dt>Author</dt><dd>Fixture Bot</dd></div>
+</dl>
+<div class="evidence"><span class="k" style="margin:0">Evidence</span><span class="redact" title="Redacted preview — the full secret is never stored in this report">izhT<span class="blk" aria-label="redacted">****************</span>4sN5</span><span class="pill v-NOT_CHECKED"><i></i>NOT CHECKED</span></div>
+<details class="more"><summary>Investigate &amp; remediate</summary>
+<div class="drawer">
+<div>
+<div class="k">Context (redacted)</div><div class="code"><span class="g">4</span><pre>    API_SECRET=izhT****************4sN5</pre></div>
+<div class="k">Commit message</div><p class="msg">Add GitLab CI and Dockerfile</p>
+<div class="k">Remediation</div><ol class="steps"><li>ENV/ARG values persist in image layers and history. Use build secrets or runtime environment variables, rebuild and re-push images, and rotate the value.</li><li>Remove it from the current tree as well; afterwards it will remain in history, so rotation is what actually closes the exposure.</li></ol>
+</div>
+<div>
+<div class="k">Shannon entropy</div><div class="meter"><span class="m"><span style="width:77.1%"></span></span><span class="mono">4.63 bits/char</span></div>
+<div class="k">Provenance</div>
+<dl class="kv">
+<dt>First seen</dt><dd class="mono">b87205da5057393f6dc9103074efa23e5c1e15d7</dd>
+<dt>Author</dt><dd>Fixture Bot &lt;fixture-bot@example.test&gt;</dd>
+<dt>Date</dt><dd>2025-01-06 10:00 UTC</dd>
+<dt>Blob</dt><dd class="mono">2b36c5f7cdaaf6a47f712f159ef7dd43970173bf</dd>
+<dt>Fingerprint</dt><dd class="mono">229f58a7bddc5bb12c249edcf65f55be <button class="copy" type="button" data-copy="fingerprint:229f58a7bddc5bb12c249edcf65f55be" aria-label="Copy ignore rule for this finding">Copy ignore rule</button></dd>
+
+<dt>Verification</dt><dd>NOT CHECKED</dd>
+</dl>
+</div>
+</div>
+</details>
+</div>
+</article>
+<article class="card sev-high" id="f-fec8e4afb485eef99ccd2626624e797b" data-sev="high" data-presence="in-HEAD" data-detector="ci" data-order="8" data-time="1736157600000" data-path="dockerfile" data-search="dockerfile dockerfile env/arg secret dockerfile-literal ci b87205da5057393f6dc9103074efa23e5c1e15d7 fixture bot add gitlab ci and dockerfile in-head high">
+<div class="rail" aria-hidden="true"><span class="idx">#09</span><span class="sevtxt">HIGH</span><span></span></div>
+<div class="body">
+<span class="sr">Severity: HIGH.</span>
+<h4>Dockerfile ENV/ARG Secret</h4>
+<div class="tags"><span class="tag head">Present at HEAD</span><span class="tag">CI/CD config</span><span class="tag">dockerfile-literal</span></div>
+<div class="path"><span>Dockerfile<span class="ln">:5</span></span><button class="copy" type="button" data-copy="Dockerfile" aria-label="Copy file path">Copy</button></div>
+<dl class="facts">
+<div><dt>Commit</dt><dd class="mono">b87205da50</dd></div>
+<div><dt>Line</dt><dd>5<span class="mono" style="color:var(--muted)"> col 22</span></dd></div>
+<div><dt>Introduced</dt><dd>2025-01-06</dd></div>
+<div><dt>Author</dt><dd>Fixture Bot</dd></div>
+</dl>
+<div class="evidence"><span class="k" style="margin:0">Evidence</span><span class="redact" title="Redacted preview — the full secret is never stored in this report">xZmP<span class="blk" aria-label="redacted">****************</span>xYBL</span><span class="pill v-NOT_CHECKED"><i></i>NOT CHECKED</span></div>
+<details class="more"><summary>Investigate &amp; remediate</summary>
+<div class="drawer">
+<div>
+<div class="k">Context (redacted)</div><div class="code"><span class="g">5</span><pre>ENV SERVICE_PASSWORD xZmP****************xYBL</pre></div>
+<div class="k">Commit message</div><p class="msg">Add GitLab CI and Dockerfile</p>
+<div class="k">Remediation</div><ol class="steps"><li>ENV/ARG values persist in image layers and history. Use build secrets or runtime environment variables, rebuild and re-push images, and rotate the value.</li><li>Remove it from the current tree as well; afterwards it will remain in history, so rotation is what actually closes the exposure.</li></ol>
+</div>
+<div>
+<div class="k">Shannon entropy</div><div class="meter"><span class="m"><span style="width:65.6%"></span></span><span class="mono">3.94 bits/char</span></div>
+<div class="k">Provenance</div>
+<dl class="kv">
+<dt>First seen</dt><dd class="mono">b87205da5057393f6dc9103074efa23e5c1e15d7</dd>
+<dt>Author</dt><dd>Fixture Bot &lt;fixture-bot@example.test&gt;</dd>
+<dt>Date</dt><dd>2025-01-06 10:00 UTC</dd>
+<dt>Blob</dt><dd class="mono">2b36c5f7cdaaf6a47f712f159ef7dd43970173bf</dd>
+<dt>Fingerprint</dt><dd class="mono">fec8e4afb485eef99ccd2626624e797b <button class="copy" type="button" data-copy="fingerprint:fec8e4afb485eef99ccd2626624e797b" aria-label="Copy ignore rule for this finding">Copy ignore rule</button></dd>
+
+<dt>Verification</dt><dd>NOT CHECKED</dd>
+</dl>
+</div>
+</div>
+</details>
+</div>
+</article>
+<article class="card sev-high" id="f-95c998c2573389e6a2b4c02d35aab6a3" data-sev="high" data-presence="history-only" data-detector="ci" data-order="9" data-time="1736154000000" data-path=".github/workflows/deploy.yml" data-search=".github/workflows/deploy.yml github actions literal secret github-actions-literal ci ced1a10670d20e369ef4a4f8e5aa662781b9b2cc fixture bot add deploy workflow history-only high">
+<div class="rail" aria-hidden="true"><span class="idx">#10</span><span class="sevtxt">HIGH</span><span></span></div>
+<div class="body">
+<span class="sr">Severity: HIGH.</span>
+<h4>GitHub Actions Literal Secret</h4>
+<div class="tags"><span class="tag hist">History-only · deleted, still recoverable</span><span class="tag">CI/CD config</span><span class="tag">github-actions-literal</span></div>
+<div class="path"><span>.github/workflows/deploy.yml<span class="ln">:4</span></span><button class="copy" type="button" data-copy=".github/workflows/deploy.yml" aria-label="Copy file path">Copy</button></div>
+<dl class="facts">
+<div><dt>Commit</dt><dd class="mono">ced1a10670</dd></div>
+<div><dt>Line</dt><dd>4<span class="mono" style="color:var(--muted)"> col 19</span></dd></div>
+<div><dt>Introduced</dt><dd>2025-01-06</dd></div>
+<div><dt>Author</dt><dd>Fixture Bot</dd></div>
+</dl>
+<div class="evidence"><span class="k" style="margin:0">Evidence</span><span class="redact" title="Redacted preview — the full secret is never stored in this report">LCS3<span class="blk" aria-label="redacted">****************</span>dWF0</span><span class="pill v-NOT_CHECKED"><i></i>NOT CHECKED</span></div>
+<details class="more"><summary>Investigate &amp; remediate</summary>
+<div class="drawer">
+<div>
+<div class="k">Context (redacted)</div><div class="code"><span class="g">4</span><pre>  DEPLOY_API_KEY: LCS3****************dWF0</pre></div>
+<div class="k">Commit message</div><p class="msg">Add deploy workflow</p>
+<div class="k">Remediation</div><ol class="steps"><li>Revoke the token where it was issued (user settings, GitHub App or organization), then create a replacement with the minimum scopes.</li><li>It was deleted in a later commit but is still recoverable from Git history: rotate first, then rewrite history (e.g. git filter-repo) only if policy requires it.</li></ol>
+</div>
+<div>
+<div class="k">Shannon entropy</div><div class="meter"><span class="m"><span style="width:77.1%"></span></span><span class="mono">4.63 bits/char</span></div>
+<div class="k">Provenance</div>
+<dl class="kv">
+<dt>First seen</dt><dd class="mono">ced1a10670d20e369ef4a4f8e5aa662781b9b2cc</dd>
+<dt>Author</dt><dd>Fixture Bot &lt;fixture-bot@example.test&gt;</dd>
+<dt>Date</dt><dd>2025-01-06 09:00 UTC</dd>
+<dt>Blob</dt><dd class="mono">240e2e2466032dbbd0910be5cb0fbe0fa5ff6496</dd>
+<dt>Fingerprint</dt><dd class="mono">95c998c2573389e6a2b4c02d35aab6a3 <button class="copy" type="button" data-copy="fingerprint:95c998c2573389e6a2b4c02d35aab6a3" aria-label="Copy ignore rule for this finding">Copy ignore rule</button></dd>
+
+<dt>Verification</dt><dd>NOT CHECKED</dd>
+</dl>
+</div>
+</div>
+</details>
+</div>
+</article>
+<article class="card sev-high" id="f-65b48b81eae1b21448b24aa3ffac6248" data-sev="high" data-presence="in-HEAD" data-detector="ci" data-order="10" data-time="1736154000000" data-path=".github/workflows/deploy.yml" data-search=".github/workflows/deploy.yml github actions literal secret github-actions-literal ci ced1a10670d20e369ef4a4f8e5aa662781b9b2cc fixture bot add deploy workflow in-head high">
+<div class="rail" aria-hidden="true"><span class="idx">#11</span><span class="sevtxt">HIGH</span><span></span></div>
+<div class="body">
+<span class="sr">Severity: HIGH.</span>
+<h4>GitHub Actions Literal Secret</h4>
+<div class="tags"><span class="tag head">Present at HEAD</span><span class="tag">CI/CD config</span><span class="tag">github-actions-literal</span><span class="tag">+1 commit</span></div>
+<div class="path"><span>.github/workflows/deploy.yml<span class="ln">:9</span></span><button class="copy" type="button" data-copy=".github/workflows/deploy.yml" aria-label="Copy file path">Copy</button></div>
+<dl class="facts">
+<div><dt>Commit</dt><dd class="mono">ced1a10670</dd></div>
+<div><dt>Line</dt><dd>9<span class="mono" style="color:var(--muted)"> col 27</span></dd></div>
+<div><dt>Introduced</dt><dd>2025-01-06</dd></div>
+<div><dt>Author</dt><dd>Fixture Bot</dd></div>
+</dl>
+<div class="evidence"><span class="k" style="margin:0">Evidence</span><span class="redact" title="Redacted preview — the full secret is never stored in this report">dzEp<span class="blk" aria-label="redacted">****************</span>9iB7</span><span class="pill v-NOT_CHECKED"><i></i>NOT CHECKED</span></div>
+<details class="more"><summary>Investigate &amp; remediate</summary>
+<div class="drawer">
+<div>
+<div class="k">Context (redacted)</div><div class="code"><span class="g">9</span><pre>      DATABASE_PASSWORD: &quot;dzEp****************9iB7&quot;</pre></div>
+<div class="k">Commit message</div><p class="msg">Add deploy workflow</p>
+<div class="k">Remediation</div><ol class="steps"><li>Revoke the token where it was issued (user settings, GitHub App or organization), then create a replacement with the minimum scopes.</li><li>Remove it from the current tree as well; afterwards it will remain in history, so rotation is what actually closes the exposure.</li><li>It appears in 1 other commit at this path; a history rewrite must cover all of them.</li></ol>
+</div>
+<div>
+<div class="k">Shannon entropy</div><div class="meter"><span class="m"><span style="width:69.5%"></span></span><span class="mono">4.17 bits/char</span></div>
+<div class="k">Provenance</div>
+<dl class="kv">
+<dt>First seen</dt><dd class="mono">ced1a10670d20e369ef4a4f8e5aa662781b9b2cc</dd>
+<dt>Author</dt><dd>Fixture Bot &lt;fixture-bot@example.test&gt;</dd>
+<dt>Date</dt><dd>2025-01-06 09:00 UTC</dd>
+<dt>Blob</dt><dd class="mono">240e2e2466032dbbd0910be5cb0fbe0fa5ff6496</dd>
+<dt>Fingerprint</dt><dd class="mono">65b48b81eae1b21448b24aa3ffac6248 <button class="copy" type="button" data-copy="fingerprint:65b48b81eae1b21448b24aa3ffac6248" aria-label="Copy ignore rule for this finding">Copy ignore rule</button></dd>
+
+<dt>Verification</dt><dd>NOT CHECKED</dd>
+</dl>
+</div>
+</div>
+</details>
+</div>
+</article>
+<article class="card sev-high" id="f-fe76382328bad26e720268d7081c6d43" data-sev="high" data-presence="in-HEAD" data-detector="ci" data-order="11" data-time="1736154000000" data-path=".github/workflows/deploy.yml" data-search=".github/workflows/deploy.yml github actions literal secret github-actions-literal ci ced1a10670d20e369ef4a4f8e5aa662781b9b2cc fixture bot add deploy workflow in-head high">
+<div class="rail" aria-hidden="true"><span class="idx">#12</span><span class="sevtxt">HIGH</span><span></span></div>
+<div class="body">
+<span class="sr">Severity: HIGH.</span>
+<h4>GitHub Actions Literal Secret</h4>
+<div class="tags"><span class="tag head">Present at HEAD</span><span class="tag">CI/CD config</span><span class="tag">github-actions-literal</span><span class="tag">+1 commit</span></div>
+<div class="path"><span>.github/workflows/deploy.yml<span class="ln">:15</span></span><button class="copy" type="button" data-copy=".github/workflows/deploy.yml" aria-label="Copy file path">Copy</button></div>
+<dl class="facts">
+<div><dt>Commit</dt><dd class="mono">ced1a10670</dd></div>
+<div><dt>Line</dt><dd>15<span class="mono" style="color:var(--muted)"> col 22</span></dd></div>
+<div><dt>Introduced</dt><dd>2025-01-06</dd></div>
+<div><dt>Author</dt><dd>Fixture Bot</dd></div>
+</dl>
+<div class="evidence"><span class="k" style="margin:0">Evidence</span><span class="redact" title="Redacted preview — the full secret is never stored in this report">Gr9Y<span class="blk" aria-label="redacted">****************</span>vLWH</span><span class="pill v-NOT_CHECKED"><i></i>NOT CHECKED</span></div>
+<details class="more"><summary>Investigate &amp; remediate</summary>
+<div class="drawer">
+<div>
+<div class="k">Context (redacted)</div><div class="code"><span class="g">15</span><pre>          api_token: Gr9Y****************vLWH</pre></div>
+<div class="k">Commit message</div><p class="msg">Add deploy workflow</p>
+<div class="k">Remediation</div><ol class="steps"><li>Revoke the token where it was issued (user settings, GitHub App or organization), then create a replacement with the minimum scopes.</li><li>Remove it from the current tree as well; afterwards it will remain in history, so rotation is what actually closes the exposure.</li><li>It appears in 1 other commit at this path; a history rewrite must cover all of them.</li></ol>
+</div>
+<div>
+<div class="k">Shannon entropy</div><div class="meter"><span class="m"><span style="width:75.0%"></span></span><span class="mono">4.50 bits/char</span></div>
+<div class="k">Provenance</div>
+<dl class="kv">
+<dt>First seen</dt><dd class="mono">ced1a10670d20e369ef4a4f8e5aa662781b9b2cc</dd>
+<dt>Author</dt><dd>Fixture Bot &lt;fixture-bot@example.test&gt;</dd>
+<dt>Date</dt><dd>2025-01-06 09:00 UTC</dd>
+<dt>Blob</dt><dd class="mono">240e2e2466032dbbd0910be5cb0fbe0fa5ff6496</dd>
+<dt>Fingerprint</dt><dd class="mono">fe76382328bad26e720268d7081c6d43 <button class="copy" type="button" data-copy="fingerprint:fe76382328bad26e720268d7081c6d43" aria-label="Copy ignore rule for this finding">Copy ignore rule</button></dd>
+
+<dt>Verification</dt><dd>NOT CHECKED</dd>
+</dl>
+</div>
+</div>
+</details>
+</div>
+</article><div class="none" id="none">No findings match these filters.</div></div>
 </section>
-<p class="warn">Secrets are redacted. A history-only secret is still recoverable from Git history until the history is rewritten — rotate the credential, do not just delete it. Report genuinely live findings privately to the repository owner.</p>
-<footer>Generated by git-leak-hunter 0.1.0 · config b26f2e407f9c5064 · schema 1.0</footer>
+<section id="details" aria-labelledby="h-details">
+<div class="sechead"><span class="num">03</span><h2 id="h-details">Scan details</h2><p>Measured counters from this run. Each unique blob is scanned once and reused across commits and paths.</p></div>
+<div class="grid">
+<div class="panel stat span-3" class="reveal" style="--i:10"><h3>Commits walked</h3><div class="v">4</div><div class="s">every reachable ref unless limited</div></div>
+<div class="panel stat span-3" class="reveal" style="--i:11"><h3>File versions seen</h3><div class="v">8</div><div class="s">changed files across all commits</div></div>
+<div class="panel stat span-3" class="reveal" style="--i:12"><h3>Unique blobs scanned</h3><div class="v">8</div><div class="s">0 cache hits · 0% reused</div></div>
+<div class="panel stat span-3" class="reveal" style="--i:13"><h3>Bytes scanned</h3><div class="v">2.2 KiB</div><div class="s">in 57 ms</div></div>
+<div class="panel span-6" class="reveal" style="--i:14"><h3>False positives filtered (1)</h3><ul class="bars "><li><span class="lbl" title="ci-expression">ci-expression</span><span class="val">1</span><span class="track"><span class="fill" style="width:100.00%"></span></span></li></ul></div>
+<div class="panel span-6" class="reveal" style="--i:15"><h3>Configuration</h3><table class="opts"><tbody>
+<tr><th>Entropy thresholds (hex / base64)</th><td>3 / 4.5 bits/char</td></tr>
+<tr><th>Minimum candidate length</th><td>20</td></tr>
+<tr><th>Max file size</th><td>2.0 MiB</td></tr>
+<tr><th>CI/CD parsing</th><td>on</td></tr>
+<tr><th>Blob cache</th><td>on</td></tr>
+<tr><th>Live verification</th><td>off</td></tr>
+
+<tr><th>Skipped (binary / oversize / ignored / missing)</th><td>0 / 0 / 0 / 0</td></tr>
+<tr><th>Config hash · schema</th><td>b26f2e407f9c5064 · 1.0</td></tr>
+<tr><th>Started → finished</th><td>2026-10-27 07:17 UTC → 2026-10-27 07:17 UTC</td></tr>
+</tbody></table></div>
+</div>
+</section>
+<footer>
+<div><h5>Responsible use</h5><ul>
+<li>Secrets are redacted. Share reports, not secrets.</li>
+<li>A history-only secret is still recoverable: rotate the credential, do not just delete it.</li>
+<li>Report genuinely live findings privately to the repository owner. Never use a discovered credential.</li>
+</ul></div>
+<div class="sig">Generated by git-leak-hunter 0.1.0<br>config b26f2e407f9c5064 · schema 1.0<br>Self-contained · no network requests</div>
+</footer>
 </main>
 <script>
 (function(){
-  var sev='all', pres='all';
-  var cards=[].slice.call(document.querySelectorAll('.card'));
-  var list=document.getElementById('findings');
-  function apply(){
-    var shown=0;
-    cards.forEach(function(c){
-      var ok=(sev==='all'||c.getAttribute('data-severity')===sev)&&(pres==='all'||c.getAttribute('data-presence')===pres);
-      c.hidden=!ok; if(ok)shown++;
+  var root=document.documentElement, KEY='glh-theme';
+  function effective(){var t=root.getAttribute('data-theme');if(t)return t;return window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';}
+  function label(){var b=document.getElementById('theme');if(b){var d=effective()==='dark';b.setAttribute('aria-label',d?'Switch to light theme':'Switch to dark theme');b.querySelector('.t').textContent=d?'Light':'Dark';}}
+  try{var saved=localStorage.getItem(KEY);if(saved==='light'||saved==='dark')root.setAttribute('data-theme',saved);}catch(e){}
+  label();
+  if(window.matchMedia){var mq=matchMedia('(prefers-color-scheme: dark)');if(mq.addEventListener)mq.addEventListener('change',label);else if(mq.addListener)mq.addListener(label);}
+  var tb=document.getElementById('theme');
+  if(tb)tb.addEventListener('click',function(){var next=effective()==='dark'?'light':'dark';root.setAttribute('data-theme',next);try{localStorage.setItem(KEY,next);}catch(e){}label();});
+  var pb=document.getElementById('print');if(pb)pb.addEventListener('click',function(){window.print();});
+
+  var list=document.getElementById('list');
+  if(list){
+    var cards=[].slice.call(list.querySelectorAll('.card'));
+    var sev={}, presence='all', detector='all', q='';
+    var shown=document.getElementById('shown'), none=document.getElementById('none');
+    function apply(){
+      var any=Object.keys(sev).some(function(k){return sev[k];}), n=0;
+      cards.forEach(function(c){
+        var ok=(!any||sev[c.getAttribute('data-sev')])&&(presence==='all'||c.getAttribute('data-presence')===presence)&&(detector==='all'||c.getAttribute('data-detector')===detector)&&(!q||c.getAttribute('data-search').indexOf(q)!==-1);
+        c.hidden=!ok;if(ok)n++;
+      });
+      if(shown)shown.textContent=String(n);
+      if(none)none.classList.toggle('on',n===0);
+    }
+    [].forEach.call(document.querySelectorAll('[data-sev-chip]'),function(b){
+      b.addEventListener('click',function(){var k=b.getAttribute('data-sev-chip');sev[k]=!sev[k];b.setAttribute('aria-pressed',String(!!sev[k]));apply();});
     });
-    document.getElementById('shown').textContent=String(shown);
+    [].forEach.call(document.querySelectorAll('[data-presence-btn]'),function(b){
+      b.addEventListener('click',function(){presence=b.getAttribute('data-presence-btn');[].forEach.call(document.querySelectorAll('[data-presence-btn]'),function(x){x.setAttribute('aria-pressed',String(x===b));});apply();});
+    });
+    var ds=document.getElementById('detector');if(ds)ds.addEventListener('change',function(){detector=ds.value;apply();});
+    var input=document.getElementById('q'),timer;
+    if(input)input.addEventListener('input',function(){clearTimeout(timer);timer=setTimeout(function(){q=input.value.trim().toLowerCase();apply();},90);});
+    document.addEventListener('keydown',function(e){
+      var t=e.target&&e.target.tagName;
+      if(e.key==='/'&&t!=='INPUT'&&t!=='SELECT'&&t!=='TEXTAREA'&&input){e.preventDefault();input.focus();}
+      if(e.key==='Escape'&&document.activeElement===input){input.value='';q='';apply();input.blur();}
+    });
+    var so=document.getElementById('sort');
+    if(so)so.addEventListener('change',function(){
+      var k=so.value;
+      cards.sort(function(a,b){
+        if(k==='newest')return Number(b.getAttribute('data-time'))-Number(a.getAttribute('data-time'));
+        if(k==='oldest')return Number(a.getAttribute('data-time'))-Number(b.getAttribute('data-time'));
+        if(k==='path')return a.getAttribute('data-path')<b.getAttribute('data-path')?-1:1;
+        return Number(a.getAttribute('data-order'))-Number(b.getAttribute('data-order'));
+      });
+      cards.forEach(function(c){list.appendChild(c);});
+      if(none)list.appendChild(none);
+    });
+    function all(open){[].forEach.call(list.querySelectorAll('details.more'),function(d){d.open=open;});}
+    var ea=document.getElementById('expand'),ca=document.getElementById('collapse');
+    if(ea)ea.addEventListener('click',function(){all(true);});
+    if(ca)ca.addEventListener('click',function(){all(false);});
+    var wasOpen=[];
+    window.addEventListener('beforeprint',function(){wasOpen=[].map.call(list.querySelectorAll('details.more'),function(d){return d.open;});all(true);});
+    window.addEventListener('afterprint',function(){[].forEach.call(list.querySelectorAll('details.more'),function(d,i){d.open=!!wasOpen[i];});});
+    [].forEach.call(document.querySelectorAll('[data-jump]'),function(a){
+      a.addEventListener('click',function(){var k=a.getAttribute('data-jump');var b=document.querySelector('[data-sev-chip="'+k+'"]');if(b&&!sev[k]){b.click();}});
+    });
   }
-  document.querySelectorAll('[data-filter-sev]').forEach(function(b){
+
+  [].forEach.call(document.querySelectorAll('.copy[data-copy]'),function(b){
     b.addEventListener('click',function(){
-      sev=b.getAttribute('data-filter-sev');
-      document.querySelectorAll('[data-filter-sev]').forEach(function(x){x.setAttribute('aria-pressed',String(x===b));});
-      apply();
+      var v=b.getAttribute('data-copy'),old=b.textContent;
+      function ok(){b.textContent='Copied';b.classList.add('done');setTimeout(function(){b.textContent=old;b.classList.remove('done');},1200);}
+      if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(v).then(ok,function(){});}
     });
-  });
-  var p=document.getElementById('presence');
-  if(p)p.addEventListener('change',function(){pres=p.value;apply();});
-  var s=document.getElementById('sort');
-  if(s)s.addEventListener('change',function(){
-    var key=s.value;
-    cards.sort(function(a,b){
-      if(key==='recent')return Number(b.getAttribute('data-time'))-Number(a.getAttribute('data-time'));
-      return Number(a.getAttribute('data-order'))-Number(b.getAttribute('data-order'));
-    });
-    cards.forEach(function(c){list.appendChild(c);});
   });
 })();
 </script>

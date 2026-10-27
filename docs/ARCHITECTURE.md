@@ -228,14 +228,30 @@ cover:
 - **JSON** (`json.ts`): `report.json`, validated against `schema/report.schema.json` in the tests.
   `additionalProperties: false` everywhere, so an unexpected (e.g. raw-secret) field fails
   validation.
-- **HTML** (`html.ts`): one file containing:
-  - inline CSS and one inline vanilla-JS block (filter by severity and presence, sort by severity
-    or recency);
-  - CSP `default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'`;
-  - no external resources;
-  - severity always shown as a text label, a print stylesheet, and a dark-mode palette.
-
-  Every dynamic value goes through `esc()`. Control characters in paths are shown as `\xNN`.
+- **HTML** (`html.ts`, styles and script in `htmlAssets.ts`, remediation text in `guidance.ts`):
+  one self-contained "case file" page.
+  - **Header:** a case id and a verdict stamp derived from the highest severity.
+  - **Overview:**
+    - severity tiles, a stacked severity bar, and the HEAD vs history-only split;
+    - a first-committed timeline: inline SVG, one dot per finding, hover for details;
+    - breakdowns by secret type, file and detection layer, plus verification status.
+  - **Findings explorer:**
+    - text search (`/` to focus), severity chips, presence and detector filters, four sort orders,
+      expand/collapse all;
+    - each card shows the redacted evidence as a redaction bar, plus an "Investigate & remediate"
+      drawer: redacted context, commit message, rule-specific remediation steps, provenance, and a
+      copy-ignore-rule button.
+  - **Scan details:** measured counters, cache reuse, false positives filtered by reason, and the
+    configuration used.
+  - **Visual system:**
+    - local font stacks only, and charts drawn as inline SVG/CSS (both print);
+    - severity uses an ordinal colour ramp validated for colour-vision deficiency in the light and
+      dark themes, always paired with a text label;
+    - light/dark themes with a toggle (stored in `localStorage` when available), plus print, phone
+      and reduced-motion styles.
+  - **Security:** one inline script, CSP `default-src 'none'; style-src 'unsafe-inline';
+script-src 'unsafe-inline'`, and no external resources. Every dynamic value goes through
+    `esc()`, and control characters in paths are shown as `\xNN`.
 
 - **Ordering**: severity (desc), then commit date (desc), then path and line.
 

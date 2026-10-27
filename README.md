@@ -43,7 +43,12 @@ recoverable): the case this tool exists for.
 - **Optional live verification** (`--verify --confirm-authorized`): AWS `sts:GetCallerIdentity` and
   GitHub `GET /user` only, with a hard host allowlist, no redirects, rate-limit aware.
 - **Safe reports.**
-  - Single-file HTML with a strict CSP and no external resources; every value is escaped.
+  - Single-file HTML "case file" report with a strict CSP and no external resources; every value
+    is escaped. It includes:
+    - an overview with severity charts, the HEAD vs history-only split, and a first-committed
+      timeline;
+    - a searchable, filterable findings explorer with per-finding remediation steps;
+    - scan statistics, light/dark themes, and print styles.
   - JSON is validated against [schema/report.schema.json](schema/report.schema.json).
   - No full secret appears in any output; the test suite enforces this.
 - **Optional GitHub dorking** (`dork --owner <you>`). Searches the GitHub code-search API, only
