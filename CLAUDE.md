@@ -42,6 +42,7 @@ fails validation.
 | Coverage                               | `npm run coverage`                                        |
 | Build                                  | `npm run build`                                           |
 | Run CLI from source                    | `npm run dev -- scan <path>`                              |
+| Local web UI (127.0.0.1)               | `npm run dev -- ui`                                       |
 | Build fixture repos to a dir           | `npm run fixtures -- <outDir>`                            |
 | Entropy calibration table              | `npx tsx bench/entropy-calibration.ts`                    |
 | Benchmarks → docs/BENCHMARK.md         | `npm run bench` (commit first: results record the commit) |
@@ -66,6 +67,7 @@ src/
   verify/           Stage 3b: aws, github, index (allowlist + guardrails)
   report/           Stage 4: redact, json, html
   dork/             optional: owner-scoped GitHub code search → same Finding pipeline
+  ui/               local web UI: hardened node:http server, scan manager, folder browser, client
 schema/report.schema.json
 test/  fixtures/ (repo builder + ground truth), unit/, integration/, helpers/
 bench/  docs/  examples/

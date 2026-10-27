@@ -15,7 +15,7 @@ import { emptyIgnoreRules, isIgnoredPath, parseIgnore, type IgnoreRules } from '
 import type { SeverityOverrides } from './detect/severity.js';
 import type { FileKind } from './detect/types.js';
 import { runGit } from './git/exec.js';
-import { scanHistory, type BlobScanner } from './git/index.js';
+import { scanHistory, type BlobScanner, type GitEngineCounters } from './git/index.js';
 import { openRepository, resolveRef } from './git/repo.js';
 import { renderHtml } from './report/html.js';
 import { buildReport, renderJson } from './report/json.js';
@@ -48,8 +48,14 @@ export interface ScanRequest {
   severityOverrides?: SeverityOverrides;
 }
 
+/** Coarse stages of a scan, reported through `ScanHooks.onPhase` (used by the web UI). */
+export type ScanPhase = 'opening' | 'walking' | 'analyzing' | 'verifying' | 'writing';
+
 export interface ScanHooks {
   onBeforeClone?: (safeUrl: string) => void;
+  onPhase?: (phase: ScanPhase) => void;
+  /** Live engine counters while history is walked. */
+  onProgress?: (counters: Readonly<GitEngineCounters>) => void;
   /** Test seam: wrap or replace the per-blob scanner (e.g. to count calls). */
   wrapScanner?: (scanner: BlobScanner) => BlobScanner;
   /** Called before any verification request, with the number of verifiable findings. */
@@ -101,6 +107,7 @@ async function readHeadFile(
 
 export async function runScan(req: ScanRequest, hooks: ScanHooks = {}): Promise<ScanResult> {
   const startedAt = new Date();
+  hooks.onPhase?.('opening');
   const repo = await openRepository(
     req.target,
     hooks.onBeforeClone ? { onBeforeClone: hooks.onBeforeClone } : {},
@@ -137,6 +144,7 @@ export async function runScan(req: ScanRequest, hooks: ScanHooks = {}): Promise<
     const scanner = hooks.wrapScanner ? hooks.wrapScanner(baseScanner) : baseScanner;
     const configHash = configHashOf(opts);
 
+    hooks.onPhase?.('walking');
     const history = await scanHistory({
       dir: repo.dir,
       repoName: repo.displayName,
@@ -151,8 +159,10 @@ export async function runScan(req: ScanRequest, hooks: ScanHooks = {}): Promise<
       cache: opts.cache,
       configHash,
       maxFileBytes: opts.maxFileBytes,
+      ...(hooks.onProgress ? { onProgress: hooks.onProgress } : {}),
     });
 
+    hooks.onPhase?.('analyzing');
     const analyzed = analyze({
       occurrences: history.occurrences,
       headResults: history.headResults,
@@ -165,6 +175,7 @@ export async function runScan(req: ScanRequest, hooks: ScanHooks = {}): Promise<
     // VERIFY (opt-in): read-only, allowlisted calls; the vault is cleared inside.
     let verification: VerifySummary | undefined;
     if (vault) {
+      hooks.onPhase?.('verifying');
       hooks.onVerifyStart?.(findings.filter((f) => VERIFIABLE_RULES.has(f.ruleId)).length);
       ({ findings, summary: verification } = await verifyFindings(
         findings,
@@ -190,6 +201,7 @@ export async function runScan(req: ScanRequest, hooks: ScanHooks = {}): Promise<
       findings,
     });
 
+    hooks.onPhase?.('writing');
     const written: ScanResult['written'] = {};
     if (req.formats.length > 0) await mkdir(req.outDir, { recursive: true });
     if (req.formats.includes('json')) {

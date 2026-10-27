@@ -43,7 +43,12 @@ export interface GitEngineOptions {
   /** Cache-key prefix: hash of ruleset + config. */
   configHash: string;
   maxFileBytes: number;
+  /** Live counters during the walk (every PROGRESS_EVERY file versions, and once at the end). */
+  onProgress?: (counters: Readonly<GitEngineCounters>) => void;
 }
+
+/** How often (in file versions) `onProgress` fires during the walk. */
+export const PROGRESS_EVERY = 200;
 
 export interface HistoryScan {
   occurrences: Occurrence[];
@@ -179,6 +184,10 @@ export async function scanHistory(opts: GitEngineOptions): Promise<HistoryScan> 
     for await (const entry of walkLog(opts.dir, opts.walk)) {
       commits.add(entry.commit.hash);
       counters.fileVersionsSeen++;
+      if (opts.onProgress && counters.fileVersionsSeen % PROGRESS_EVERY === 0) {
+        counters.commitsWalked = commits.size;
+        opts.onProgress(counters);
+      }
       const kind = opts.classify(entry.path);
       if (kind === null) {
         skipped.ignored++;
@@ -226,6 +235,7 @@ export async function scanHistory(opts: GitEngineOptions): Promise<HistoryScan> 
 
   counters.commitsWalked = commits.size;
   counters.durationMs = Math.round((performance.now() - t0) * 10) / 10;
+  opts.onProgress?.(counters);
   return {
     occurrences,
     headResults,

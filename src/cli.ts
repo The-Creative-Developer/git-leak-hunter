@@ -5,6 +5,8 @@ import { Command, InvalidArgumentError, Option } from 'commander';
 import pc from 'picocolors';
 import { loadConfig } from './config.js';
 import { runDork } from './dork/index.js';
+import { openBrowser } from './ui/open.js';
+import { DEFAULT_UI_PORT, startUiServer } from './ui/server.js';
 import { runScan, type ScanResult } from './pipeline.js';
 import { SEVERITIES, SEVERITY_RANK, type ScanOptions, type Severity } from './types.js';
 import { VERSION } from './version.js';
@@ -255,6 +257,41 @@ async function dorkAction(opts: DorkCliOptions, io: Io): Promise<number> {
   return EXIT_CLEAN;
 }
 
+interface UiCliOptions {
+  port: number;
+  config?: string;
+  open: boolean;
+}
+
+function parsePort(value: string): number {
+  const n = Number(value);
+  if (!Number.isInteger(n) || n < 0 || n > 65535) throw new InvalidArgumentError('must be 0–65535');
+  return n;
+}
+
+async function uiAction(opts: UiCliOptions, io: Io): Promise<number> {
+  const cfg = await loadConfig(opts.config);
+  const ui = await startUiServer({ port: opts.port, cwd: process.cwd(), config: cfg });
+  const ok = pc.green('✓');
+  io.out(`${ok} Git Leak Hunter local console\n`);
+  io.out(`  ${pc.bold(ui.url)}\n`);
+  io.out(
+    pc.dim(
+      `  Listening on 127.0.0.1:${ui.port} only. The link above is your session key — don't share it.\n`,
+    ),
+  );
+  io.out(pc.dim('  Press Ctrl+C to stop; reports from this session are deleted on exit.\n'));
+  if (opts.open) openBrowser(ui.url);
+  await new Promise<void>((resolve) => {
+    const stop = (): void => resolve();
+    process.once('SIGINT', stop);
+    process.once('SIGTERM', stop);
+  });
+  await ui.close();
+  io.out(`${ok} console stopped\n`);
+  return EXIT_CLEAN;
+}
+
 export function buildProgram(
   io: Io = defaultIo,
   setExit: (code: number) => void = () => undefined,
@@ -340,6 +377,24 @@ ${RESPONSIBLE_USE}`,
     )
     .action(async (opts: DorkCliOptions) => {
       setExit(await dorkAction(opts, io));
+    });
+
+  program
+    .command('ui')
+    .description(
+      'Start the local web UI (127.0.0.1 only): enter a repo path, click Scan, view the report',
+    )
+    .option('--port <n>', 'port to listen on (0 = any free port)', parsePort, DEFAULT_UI_PORT)
+    .option('--config <file>', 'JSON config file (entropy thresholds, severity overrides, ignores)')
+    .option('--no-open', 'do not open a browser; just print the link')
+    .addHelpText(
+      'after',
+      `
+The console listens on 127.0.0.1 only and every request needs the private session link it prints.
+${RESPONSIBLE_USE}`,
+    )
+    .action(async (opts: UiCliOptions) => {
+      setExit(await uiAction(opts, io));
     });
 
   return program;

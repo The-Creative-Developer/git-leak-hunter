@@ -117,6 +117,41 @@ $ git-leak-hunter scan history-only
 A sample report generated from the `ci-configs` fixture (fabricated secrets only) is in
 [examples/report.html](examples/report.html) and [examples/report.json](examples/report.json).
 
+### Local web UI (no terminal needed after launch)
+
+```bash
+git-leak-hunter ui
+```
+
+This starts a private console on your own machine and opens it in your browser.
+
+1. Type a repository path or URL, or pick a folder with **Browse…**; repositories are marked
+   `git`.
+2. Choose options if you want: branch, since, max commits, CI/CD parsing, blob cache, entropy
+   thresholds, and opt-in live verification.
+3. Press **Scan repository**.
+
+You get:
+
+- live progress: each step, plus commits, file versions, unique blobs and cache hits as they're
+  counted;
+- a result card with the verdict, severity counts and top findings;
+- the full interactive report embedded below, with Open, Download HTML and Download JSON
+  buttons;
+- a history of the scans in this session.
+
+The same rules as the CLI apply: remote URLs need your authorization tick, and live verification
+needs both ticks.
+
+Security:
+
+- It listens on **127.0.0.1 only** and refuses foreign `Host` and cross-site requests.
+- Every request needs the private session link printed in the terminal (`…/#token=…`).
+- Reports open in a sandbox that cannot reach the scan server.
+- Reports from the session are deleted when you stop it (Ctrl+C).
+
+Options: `--port <n>` (default 7420; 0 = any free port), `--no-open`, `--config <file>`.
+
 ### Optional: GitHub dorking (owners you control only)
 
 ```bash

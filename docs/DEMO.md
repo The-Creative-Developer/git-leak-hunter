@@ -97,7 +97,23 @@ Open `leak-report/ci-configs/report.html` in a browser by double-clicking it. No
 
 A copy generated from the same fixture is committed as `examples/report.html`.
 
-## 4. Optional extras
+## 4. The same, without the terminal (web UI)
+
+```bash
+node dist/cli.js ui
+```
+
+Your browser opens the local console; if it doesn't, open the printed link.
+
+1. Click **Browse…**, open `demo-repos`, and pick `ci-configs` (marked `git`). Press **Scan
+   repository**.
+2. Show the live progress steps, then the result card: verdict stamp, severity counts, top
+   findings.
+3. Scroll to the embedded full report. **Open full report ↗** gives the same page in its own tab.
+4. Scan `history-only` as well to show the session history list.
+5. Stop the console with Ctrl+C; the session's reports are deleted.
+
+## 5. Optional extras
 
 - **Memoization:** scanning `demo-repos/blob-reuse` reports 3 unique blobs and 12 cache hits. One
   secret-bearing blob is copied to four paths, deleted, restored and branched.

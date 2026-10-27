@@ -174,6 +174,54 @@ request is made at all without `--verify`.
 | Credentials in clone URLs                                                                    | stripped from notices, errors and the report                                                                                                         | `remote.test.ts`                                          |
 | Large histories                                                                              | streaming log parser, one `cat-file` process, per-blob memoization                                                                                   | `scale.test.ts` (2,000 commits)                           |
 
+## Local web UI (`src/ui/`)
+
+`git-leak-hunter ui` starts a `node:http` server (no extra dependencies). It serves a small app
+(`client.ts`: HTML shell, CSS, JS) and a JSON API, and runs scans through the same `runScan`
+pipeline as the CLI. `onPhase` and `onProgress` hooks drive the live progress view.
+
+| Route                                          | Purpose                                                |
+| ---------------------------------------------- | ------------------------------------------------------ |
+| `GET /`, `/app.js`, `/app.css`, `/favicon.svg` | static app shell (contains no data)                    |
+| `GET /api/session`                             | version, launch folder, home, busy flag                |
+| `GET /api/browse?path=<abs>`                   | sub-folders of a folder (never files), repos marked    |
+| `POST /api/scans`                              | validate and start a scan (one at a time; 409 if busy) |
+| `GET /api/scans`, `GET /api/scans/:id`         | session history; live state (phase, counters, summary) |
+| `GET /scans/:id/report.{html,json}?t=…`        | the generated reports (HTML embedded, or downloaded)   |
+
+A local server that can scan any folder must not be usable by other websites the user visits:
+they can send requests to localhost, and DNS rebinding can make them look same-origin. Guards
+(`server.ts`):
+
+- **Loopback only:** it binds `127.0.0.1`, never `0.0.0.0`.
+- **Host check:** the `Host` header must be `127.0.0.1:<port>` or `localhost:<port>`, which
+  defeats DNS rebinding.
+- **Session token:** 192 random bits, compared in constant time.
+  - It arrives in the launch link's `#fragment`, so it is never sent to the server or logged.
+  - The app then moves it to `sessionStorage`, removes it from the address bar, and sends it as
+    an `x-glh-token` header.
+  - Report files take it as `?t=`, because frames cannot set headers.
+- **No cross-site requests:**
+  - `Sec-Fetch-Site` must be `same-origin` or `none` when present, and a present `Origin` must be
+    this server.
+  - POST bodies must be `application/json` (≤ 16 KiB); a cross-site form can't send that
+    without a CORS preflight, and none is ever granted.
+- **App page CSP:** `script-src 'self'; style-src 'self'` with no inline code,
+  `frame-ancestors 'none'`, `X-Frame-Options: DENY` and `no-store`. All dynamic content is
+  created with `textContent`.
+- **Sandboxed reports:** reports carry a CSP `sandbox` header. Their own script runs in an opaque
+  origin, so it cannot reach the API or the parent page.
+- **Request validation:** every field is checked; unknown fields are refused. Remote URLs need
+  `authorized: true`, and live verification needs `confirmAuthorized: true`, the same gates as
+  the CLI.
+- **Temporary reports:** reports live in per-scan temp folders (at most 20 kept). They are removed
+  on shutdown, including Ctrl+C, through a synchronous exit hook.
+
+Tests (`test/integration/ui.test.ts`) use raw HTTP to forge `Host`, `Origin` and `Sec-Fetch-Site`
+the way an attacking page would. They also check the token rules, the CSP and sandbox headers,
+body limits and validation, an end-to-end scan with leak checks, the folder browser, and the
+one-scan-at-a-time rule.
+
 ## Optional: GitHub dorking (`src/dork/`)
 
 `git-leak-hunter dork --owner <name> --confirm-authorized` uses the GitHub code-search API with a
